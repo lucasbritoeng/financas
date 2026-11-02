@@ -1,0 +1,20 @@
+FINANÇAS (PWA)
+
+Arquivos: index.html, style.css, app.js, manifest.json, sw.js, icon-192.png, icon-512.png
+Mantenha todos juntos, na mesma pasta.
+
+TESTE LOCAL
+- Abra o arquivo financas-teste.html (arquivo único) no Chrome. Não precisa de servidor.
+- Os dados ficam no navegador daquele endereço. O teste local e o site publicado NÃO
+  compartilham dados: use Configurações > Exportar backup e depois Importar no outro.
+
+PUBLICAR (precisa de HTTPS para instalar no celular)
+- Netlify Drop (mais simples e sem repositório público): app.netlify.com/drop
+  Arraste a PASTA inteira. Crie conta grátis para o site não expirar.
+- GitHub Pages: repositório > Settings > Pages > Deploy from a branch > main / (root).
+  Atenção: em repositório público o código fica visível, e os valores iniciais
+  (renda, dívidas) estão no app.js.
+
+INSTALAR NO CELULAR
+- Android (Chrome): menu ⋮ > Instalar app.
+- iPhone (Safari): Compartilhar > Adicionar à Tela de Início.

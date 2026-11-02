@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Finanças</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Finanças">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <button class="nav" id="prev" aria-label="Mês anterior">‹</button>
+  <h1 id="title"></h1>
+  <button class="nav" id="next" aria-label="Próximo mês">›</button>
+  <button class="nav" id="openSet" aria-label="Configurações">⚙</button>
+</header>
+
+<main id="main"></main>
+
+<button id="fab" aria-label="Adicionar">+</button>
+
+<nav id="tabs">
+  <button data-tab="home"><i>🏠</i>Início</button>
+  <button data-tab="tx"><i>🧾</i>Lançam.</button>
+  <button data-tab="market"><i>🛒</i>Mercado</button>
+  <button data-tab="plan"><i>📋</i>Plano</button>
+  <button data-tab="goals"><i>🎯</i>Metas</button>
+</nav>
+
+<datalist id="dlItems"></datalist>
+<datalist id="dlMarkets"></datalist>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- Lançamento -->
+<section class="sheet" id="sheetTx">
+  <form id="formTx" autocomplete="off">
+    <h2 id="txTitle">Novo lançamento</h2>
+    <div class="seg" id="seg">
+      <button type="button" data-type="out" class="on">Despesa</button>
+      <button type="button" data-type="in">Receita</button>
+      <button type="button" data-type="save">Guardar</button>
+      <button type="button" data-type="debt">Dívida</button>
+    </div>
+    <label><span>Valor (R$)</span>
+      <input id="fAmount" inputmode="decimal" placeholder="0,00">
+    </label>
+    <label><span>Descrição (opcional)</span>
+      <input id="fDesc" placeholder="Ex.: pneu, Mercado Livre">
+    </label>
+    <label><span id="catLbl">Categoria</span>
+      <select id="fCat"></select>
+    </label>
+    <label id="lblWallet"><span>Pago com</span>
+      <select id="fWallet">
+        <option value="main">Dinheiro / Pix / débito</option>
+        <option value="card">Cartão de crédito</option>
+        <option value="va">Vale alimentação</option>
+      </select>
+    </label>
+    <label><span>Data</span>
+      <input id="fDate" type="date" required>
+    </label>
+    <div class="row">
+      <button type="button" class="ghost danger" id="btnDel" hidden>Excluir</button>
+      <button type="button" class="ghost" data-close>Cancelar</button>
+      <button type="submit" class="primary">Salvar</button>
+    </div>
+  </form>
+</section>
+
+<!-- Formulário genérico -->
+<section class="sheet" id="sheetGen">
+  <form id="formGen" autocomplete="off"></form>
+</section>
+
+<!-- Configurações -->
+<section class="sheet" id="sheetSet">
+  <form id="formSet" autocomplete="off">
+    <h2>Configurações</h2>
+    <label><span>Teto mensal do cartão de crédito (R$)</span>
+      <input id="sCardCap" inputmode="decimal" placeholder="0,00">
+    </label>
+    <div class="row">
+      <button type="button" class="ghost" data-close>Cancelar</button>
+      <button type="submit" class="primary">Salvar</button>
+    </div>
+    <hr>
+    <h3>Dados</h3>
+    <div class="row wrap">
+      <button type="button" class="ghost small" id="btnExport">Exportar backup</button>
+      <button type="button" class="ghost small" id="btnImport">Importar backup</button>
+      <button type="button" class="ghost small danger" id="btnWipe">Apagar tudo</button>
+    </div>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <p class="hint">Os dados ficam só neste aparelho. Exporte um backup de vez em quando.</p>
+  </form>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
