@@ -1,9 +1,13 @@
-const CACHE = 'financas-v3';
+const CACHE = 'financas-v4.0';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
+  // Não chama skipWaiting aqui: a versão nova espera o usuário tocar em "Atualizar".
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
-  self.skipWaiting();
+});
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
@@ -13,7 +17,7 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Rede primeiro (pega atualizações); se estiver offline, usa o cache
+// Rede primeiro (pega arquivos novos); sem internet, usa o cache
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(

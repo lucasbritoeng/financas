@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Finanças</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#1d2023">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Finanças">
@@ -15,22 +15,27 @@
 </head>
 <body>
 <header>
-  <button class="nav" id="prev" aria-label="Mês anterior">‹</button>
+  <button class="icon-btn" id="prev" data-ic="left" aria-label="Mês anterior"></button>
   <h1 id="title"></h1>
-  <button class="nav" id="next" aria-label="Próximo mês">›</button>
-  <button class="nav" id="openSet" aria-label="Configurações">⚙</button>
+  <button class="icon-btn" id="next" data-ic="right" aria-label="Próximo mês"></button>
+  <button class="icon-btn" id="openSet" data-ic="sliders" aria-label="Configurações"></button>
 </header>
+
+<div id="update" hidden>
+  <span>Nova versão disponível</span>
+  <button type="button" id="btnUpdate">Atualizar</button>
+</div>
 
 <main id="main"></main>
 
-<button id="fab" aria-label="Adicionar">+</button>
+<button id="fab" data-ic="plus" aria-label="Adicionar"></button>
 
 <nav id="tabs">
-  <button data-tab="home"><i>🏠</i>Início</button>
-  <button data-tab="tx"><i>🧾</i>Lançam.</button>
-  <button data-tab="market"><i>🛒</i>Mercado</button>
-  <button data-tab="plan"><i>📋</i>Plano</button>
-  <button data-tab="goals"><i>🎯</i>Metas</button>
+  <button data-tab="home"><span data-ic="home"></span>Início</button>
+  <button data-tab="tx"><span data-ic="receipt"></span>Lançamentos</button>
+  <button data-tab="market"><span data-ic="cart"></span>Mercado</button>
+  <button data-tab="plan"><span data-ic="plan"></span>Plano</button>
+  <button data-tab="goals"><span data-ic="target"></span>Metas</button>
 </nav>
 
 <datalist id="dlItems"></datalist>
@@ -59,7 +64,7 @@
     </label>
     <label id="lblWallet"><span>Pago com</span>
       <select id="fWallet">
-        <option value="main">Dinheiro / Pix / débito</option>
+        <option value="main">Dinheiro, Pix ou débito</option>
         <option value="card">Cartão de crédito</option>
         <option value="va">Vale alimentação</option>
       </select>
@@ -75,7 +80,7 @@
   </form>
 </section>
 
-<!-- Formulário genérico -->
+<!-- Formulário genérico e menus -->
 <section class="sheet" id="sheetGen">
   <form id="formGen" autocomplete="off"></form>
 </section>
@@ -100,6 +105,7 @@
     </div>
     <input type="file" id="fileImport" accept="application/json" hidden>
     <p class="hint">Os dados ficam só neste aparelho. Exporte um backup de vez em quando.</p>
+    <p class="hint" id="verLbl"></p>
   </form>
 </section>
 

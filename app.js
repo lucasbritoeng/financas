@@ -1,43 +1,65 @@
 'use strict';
 
+const APP_VERSION = '4.0';
+
+/* =====================================================================
+   ÍCONES (traço, uma cor, herdam a cor do texto)
+   ===================================================================== */
+const IC = {
+  home: '<path d="M3.5 11.5 12 4l8.5 7.5"/><path d="M5.5 10v9.5h13V10"/>',
+  receipt: '<path d="M6.5 3.5h11a1 1 0 0 1 1 1V20l-3-1.8-3 1.8-3-1.8-3 1.8V4.5a1 1 0 0 1 1-1z"/><path d="M9.5 8.5h5M9.5 12h5"/>',
+  cart: '<path d="M3.5 5h2.3l1.7 9h9.6l1.4-6.5H7"/><circle cx="9.2" cy="18.5" r="1.3"/><circle cx="16.4" cy="18.5" r="1.3"/>',
+  plan: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9.2l1.3 1.3L11.8 8M14 9.4h3M8 15l1.3 1.3L11.8 13.8M14 15.2h3"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
+  plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+  left: '<path d="M14.5 6 8.5 12l6 6"/>',
+  right: '<path d="M9.5 6l6 6-6 6"/>',
+  sliders: '<path d="M4.5 8h8M17.5 8h2M4.5 16h2M11.5 16h8"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/>',
+  check: '<path d="M5.5 12.5l4.2 4.2L18.5 8"/>',
+  more: '<circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/>',
+  chevd: '<path d="M6 9.5l6 6 6-6"/>',
+  chevu: '<path d="M6 14.5l6-6 6 6"/>',
+  circle: '<circle cx="12" cy="12" r="8.5"/>',
+};
+const ico = (n, s = 22, cls = '') =>
+  `<svg class="ic ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+
 /* =====================================================================
    CATÁLOGOS
    e = essencial (1) ou não (0) · fx = conta fixa (entra no checklist)
-   b = orçamento padrão (editável na aba Plano)
    ===================================================================== */
 const OUT_BASE = [
-  { n: 'Moradia', i: '🏠', e: 1, fx: 1, b: 700 },
-  { n: 'Energia', i: '💡', e: 1, fx: 1, b: 200 },
-  { n: 'Água', i: '🚰', e: 1, fx: 1, b: 65 },
-  { n: 'Internet', i: '📶', e: 1, fx: 1, b: 120 },
-  { n: 'Gás', i: '🔥', e: 1, b: 40 },
-  { n: 'Combustível', i: '⛽', e: 1, b: 500 },
-  { n: 'Mercado', i: '🛒', e: 1, b: 1000 },
-  { n: 'Carro', i: '🚗', e: 1, b: 400 },
-  { n: 'Casa e utilidades', i: '🧰', e: 1, b: 300 },
-  { n: 'Saúde e farmácia', i: '💊', e: 1, b: 100 },
-  { n: 'Levi', i: '🧸', e: 1, b: 200 },
-  { n: 'MEI', i: '🧾', e: 1, fx: 1, b: 90 },
-  { n: 'Cuidados pessoais', i: '💈', e: 1, b: 115 },
-  { n: 'Dízimo e ofertas', i: '🙏', e: 1, b: 0 },
-  { n: 'Lazer e delivery', i: '🎬', e: 0, b: 160 },
-  { n: 'Compras pessoais', i: '🛍️', e: 0, b: 200 },
-  { n: 'Assinaturas', i: '📺', e: 0, fx: 1, b: 40 },
-  { n: 'Outros', i: '🎲', e: 0, b: 0 },
+  { n: 'Moradia', e: 1, fx: 1, b: 0 },
+  { n: 'Energia', e: 1, fx: 1, b: 0 },
+  { n: 'Água', e: 1, fx: 1, b: 0 },
+  { n: 'Internet', e: 1, fx: 1, b: 0 },
+  { n: 'Gás', e: 1, b: 0 },
+  { n: 'Combustível', e: 1, b: 0 },
+  { n: 'Mercado', e: 1, b: 0 },
+  { n: 'Carro', e: 1, b: 0 },
+  { n: 'Casa e utilidades', e: 1, b: 0 },
+  { n: 'Saúde e farmácia', e: 1, b: 0 },
+  { n: 'Filhos', e: 1, b: 0 },
+  { n: 'MEI', e: 1, fx: 1, b: 0 },
+  { n: 'Cuidados pessoais', e: 1, b: 0 },
+  { n: 'Dízimo e ofertas', e: 1, b: 0 },
+  { n: 'Lazer e delivery', e: 0, b: 0 },
+  { n: 'Compras pessoais', e: 0, b: 0 },
+  { n: 'Assinaturas', e: 0, fx: 1, b: 0 },
+  { n: 'Outros', e: 0, b: 0 },
 ];
-let OUT = OUT_BASE.slice(); // base + categorias próprias (ver syncCats)
+let OUT = OUT_BASE.slice();
 const INC = [
-  { n: 'Salário', i: '💼', w: 'main' },
-  { n: 'Vale alimentação', i: '🥗', w: 'va' },
-  { n: 'Projetos e serviços', i: '📐', w: 'main' },
-  { n: 'Outras receitas', i: '💰', w: 'main' },
+  { n: 'Salário', w: 'main' },
+  { n: 'Vale alimentação', w: 'va' },
+  { n: 'Projetos e serviços', w: 'main' },
+  { n: 'Outras receitas', w: 'main' },
 ];
-const WTAG = { main: '', card: '💳 cartão', va: '🥗 VA' };
+const WTAG = { main: '', card: 'Cartão', va: 'Vale' };
 
 const MC_BASE = [
-  { n: 'Carnes', i: '🥩' }, { n: 'Hortifruti', i: '🥬' }, { n: 'Mercearia', i: '🍚' },
-  { n: 'Laticínios e frios', i: '🧀' }, { n: 'Padaria', i: '🍞' }, { n: 'Bebidas', i: '🥤' },
-  { n: 'Limpeza', i: '🧽' }, { n: 'Higiene', i: '🧴' }, { n: 'Congelados', i: '🧊' }, { n: 'Outros', i: '📦' },
+  { n: 'Carnes' }, { n: 'Hortifruti' }, { n: 'Mercearia' }, { n: 'Laticínios e frios' }, { n: 'Padaria' },
+  { n: 'Bebidas' }, { n: 'Limpeza' }, { n: 'Higiene' }, { n: 'Congelados' }, { n: 'Outros' },
 ];
 let MC = MC_BASE.slice();
 const SUGG = [
@@ -63,18 +85,14 @@ function defaults() {
   return {
     v: 2,
     tx: [],
-    settings: { cardCap: 1000, income: { main: 6000, va: 1000 } },
+    settings: { cardCap: 0, income: { main: 0, va: 0 } },
     budgets,
     customOut: [],
     customMc: [],
     goals: [
-      { id: 'g-reserva', name: 'Reserva de emergência', target: 3000, start: 0, monthly: 400 },
-      { id: 'g-moto', name: 'Moto da Carol', target: 5000, start: 2000, monthly: 0 },
+      { id: 'g-reserva', name: 'Reserva de emergência', target: 3000, start: 0, monthly: 0 },
     ],
-    debts: [
-      { id: 'd-cartao', name: 'Cartão (renegociação)', total: 17000, installment: 0 },
-      { id: 'd-fies', name: 'FIES', total: 9000, installment: 600 },
-    ],
+    debts: [],
     market: { items: [], lists: [], cur: null, markets: [], lastMkt: '' },
   };
 }
@@ -92,7 +110,7 @@ function fill(d) {
 function migrate(o, s) {
   const map = {
     'Contas (luz, água, internet)': 'Energia', 'Transporte': 'Combustível', 'Saúde': 'Saúde e farmácia',
-    'Educação': 'Outros', 'Filho': 'Levi', 'Restaurantes e delivery': 'Lazer e delivery', 'Lazer': 'Lazer e delivery',
+    'Educação': 'Outros', 'Filho': 'Filhos', 'Levi': 'Filhos', 'Restaurantes e delivery': 'Lazer e delivery', 'Lazer': 'Lazer e delivery',
     'Compras': 'Compras pessoais', 'Outros (não essencial)': 'Outros',
   };
   s.tx = o.tx.map(t => ({
@@ -116,6 +134,9 @@ function load() {
 }
 let S = load();
 function syncCats() {
+  // dados antigos: 'Levi' virou 'Filhos'
+  if (S.budgets.Levi != null) { if (!S.budgets.Filhos) S.budgets.Filhos = S.budgets.Levi; delete S.budgets.Levi; }
+  S.tx.forEach(t => { if (t.type === 'out' && t.cat === 'Levi') t.cat = 'Filhos'; });
   OUT = OUT_BASE.concat(S.customOut || []);
   MC = MC_BASE.concat(S.customMc || []);
   OUT.forEach(c => { if (S.budgets[c.n] == null) S.budgets[c.n] = c.b || 0; });
@@ -146,11 +167,11 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.g
 const thisMonth = () => today().slice(0, 7);
 let view = thisMonth();
 const defaultDate = () => (view === thisMonth() ? today() : view + '-01');
+const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
 
-const catInfo = n => OUT.find(c => c.n === n) || { n, i: '•', e: 1 };
-const incInfo = n => INC.find(c => c.n === n) || { n, i: '💰', w: 'main' };
+const catInfo = n => OUT.find(c => c.n === n) || { n, e: 1 };
+const incInfo = n => INC.find(c => c.n === n) || { n, w: 'main' };
 const W = t => t.wallet || 'main';
-const txIcon = t => (t.type === 'out' ? catInfo(t.cat).i : t.type === 'in' ? incInfo(t.cat).i : t.type === 'save' ? '🐷' : '🧾');
 
 const goalSaved = g => (g.start || 0) + sum(S.tx.filter(t => t.type === 'save' && t.goal === g.id));
 const debtPaid = d => sum(S.tx.filter(t => t.type === 'debt' && t.debt === d.id));
@@ -177,15 +198,10 @@ const bar = (p, cls = '') => `<div class="bar ${cls}"><i style="width:${Math.min
 /* =====================================================================
    NAVEGAÇÃO
    ===================================================================== */
-let tab = 'home';
-let flt = 'all';
+let tab = 'home', flt = 'all', catAll = false, chartOpen = false, chartMode = 'gastos', showSugg = false;
 const TITLES = { market: 'Mercado', goals: 'Metas e dívidas' };
 
-function setTab(t) {
-  tab = t;
-  render();
-  window.scrollTo(0, 0);
-}
+function setTab(t) { tab = t; render(); window.scrollTo(0, 0); }
 
 function render() {
   const monthly = ['home', 'tx', 'plan'].includes(tab);
@@ -204,10 +220,6 @@ function render() {
 /* =====================================================================
    INÍCIO
    ===================================================================== */
-/* ---------- gráfico dos últimos 6 meses ---------- */
-let chartMode = 'gastos';
-const fmtK = v => (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 'k' : v > 0 ? String(Math.round(v)) : '');
-
 function monthStats(mo) {
   const tx = S.tx.filter(t => t.date.startsWith(mo));
   const out = tx.filter(t => t.type === 'out');
@@ -218,22 +230,22 @@ function monthStats(mo) {
     sav: sumBy(tx.filter(t => t.type === 'save' || t.type === 'debt'), t => t.amount),
   };
 }
+const fmtK = v => (v >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 'k' : v > 0 ? String(Math.round(v)) : '');
 
-function chartCard() {
+function chartBody() {
   const [vy, vm] = view.split('-').map(Number);
   const ms = [];
   for (let i = 5; i >= 0; i--) { const d = new Date(vy, vm - 1 - i, 1); ms.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`); }
   const st = ms.map(monthStats);
   const MODES = [['gastos', 'Gastos'], ['ne', 'Não essenciais'], ['sav', 'Metas e dívidas']];
-  let h = `<div class="card"><h3>Últimos 6 meses</h3><div class="chips" style="margin-bottom:6px">${MODES.map(([k, l]) =>
-    `<button class="chip ${chartMode === k ? 'on' : ''}" data-a="cm" data-id="${k}">${l}</button>`).join('')}</div>`;
-  if (!st.some(s => s.ess + s.ne + s.inc + s.sav > 0)) return h + `<div class="hint">O gráfico aparece conforme você lança os meses.</div></div>`;
+  let h = `<div class="seg2">${MODES.map(([k, l]) => `<button class="chip ${chartMode === k ? 'on' : ''}" data-a="cm" data-id="${k}">${l}</button>`).join('')}</div>`;
+  if (!st.some(s => s.ess + s.ne + s.inc + s.sav > 0)) return h + `<div class="hint">O gráfico aparece conforme você lança os meses.</div>`;
 
   const neLim = sumBy(OUT.filter(c => !c.e), c => S.budgets[c.n]);
   const val = s => (chartMode === 'gastos' ? s.ess + s.ne : chartMode === 'ne' ? s.ne : s.sav);
   const vals = st.map(val);
   const mx = Math.max(1, ...vals, chartMode === 'gastos' ? Math.max(...st.map(s => s.inc)) : 0, chartMode === 'ne' ? neLim : 0) * 1.12;
-  const VW = 340, VH = 176, pl = 6, pr = 6, pt = 16, pb = 24;
+  const VW = 340, VH = 170, pl = 6, pr = 6, pt = 16, pb = 24;
   const bw = (VW - pl - pr) / 6, bwid = bw * 0.56;
   const Y = v => pt + (VH - pt - pb) * (1 - v / mx);
 
@@ -258,98 +270,77 @@ function chartCard() {
   });
   s += `</svg>`;
   h += s;
-
   if (chartMode === 'gastos') {
     h += `<div class="lg"><span><i class="d-ess"></i>Essenciais</span><span><i class="d-ne"></i>Não essenciais</span><span><i class="d-inc"></i>Receitas</span></div>`;
   }
   const cur = vals[5], prev = vals[4];
   if (cur > 0 || prev > 0) {
     const d = cur - prev, good = chartMode === 'sav' ? d >= 0 : d <= 0;
-    h += `<div class="hint" style="margin-top:6px">Neste mês: <b>${brl(cur)}</b>${prev > 0 ? ` · mês anterior ${brl(prev)} (<span class="${good ? 'ok-t' : 'over-t'}">${d > 0 ? '↑' : '↓'} ${brl(Math.abs(d))}</span>)` : ''}</div>`;
+    h += `<div class="sub">Neste mês <b class="n">${brl(cur)}</b>${prev > 0 ? `, mês anterior ${brl(prev)} (<span class="${good ? 'pos' : 'crit'}">${d > 0 ? 'mais' : 'menos'} ${brl(Math.abs(d))}</span>)` : ''}</div>`;
   }
-  return h + `</div>`;
+  return h;
+}
+
+function limitRow(label, val, lim) {
+  const p = lim ? val / lim : 0, cls = p >= 1 ? 'over' : p >= 0.8 ? 'warn' : '';
+  return `<div class="lim"><div class="line"><span>${label}</span><span class="n">${brl(val)} <small>de ${brl(lim)}</small></span></div>${bar(p, cls)}
+    <div class="sub ${p >= 1 ? 'crit' : ''}">${p >= 1 ? 'Passou ' + brl(val - lim) : 'Restam ' + brl(lim - val)}</div></div>`;
 }
 
 function renderHome() {
-  const c = calc(view);
+  const c = calc(view), cap = S.settings.cardCap;
   const neLim = sumBy(OUT.filter(x => !x.e), x => S.budgets[x.n]);
   let h = '';
 
-  h += `<div class="card"><h3>Saldo em dinheiro</h3>
-    <div class="balance ${c.saldo < 0 ? 'neg' : ''}">${brl(c.saldo)}</div>
-    <div class="grid3">
-      <div class="in">Receitas<b>${brl(c.incMain)}</b></div>
-      <div class="out">Despesas<b>${brl(c.outMain + c.outCard)}</b></div>
-      <div class="sav">Metas e dívidas<b>${brl(c.sav + c.debt)}</b></div>
+  h += `<section class="hero"><div class="eyebrow">${view === thisMonth() ? greet() + '. ' : ''}Saldo em dinheiro</div>
+    <div class="big n ${c.saldo < 0 ? 'neg' : ''}">${brl(c.saldo)}</div>
+    <div class="trio">
+      <div><span>Receitas</span><b class="n">${brl(c.incMain)}</b></div>
+      <div><span>Despesas</span><b class="n">${brl(c.outMain + c.outCard)}</b></div>
+      <div><span>Guardado</span><b class="n">${brl(c.sav + c.debt)}</b></div>
     </div>`;
   if (c.incVA || c.outVA) {
     const left = c.incVA - c.outVA;
-    h += `<div class="line sub"><span>🥗 Vale alimentação</span><span class="${left < 0 ? 'over-t' : ''}">${brl(left)} <small>de ${brl(c.incVA)}</small></span></div>`;
+    h += `<div class="va"><span>Vale alimentação</span><b class="n ${left < 0 ? 'crit' : ''}">${brl(left)} <small>de ${brl(c.incVA)}</small></b></div>`;
   }
-  h += `</div>`;
+  h += `</section>`;
 
   if (!c.tx.some(t => t.type === 'in' && W(t) !== 'va')) {
-    h += `<div class="card tip"><b>Salário ainda não lançado neste mês.</b><br>Use o checklist do mês para lançar salário, vale e contas fixas.
-      <br><button class="cta" data-a="go" data-id="plan">Abrir checklist</button></div>`;
+    h += `<button class="note-btn" data-a="go" data-id="plan"><span>Lançar salário e contas do mês</span>${ico('right', 18)}</button>`;
   }
 
-  // Não essenciais
-  h += `<div class="card"><h3>Gastos não essenciais</h3>`;
-  if (neLim > 0) {
-    const pct = c.ne / neLim;
-    const cls = pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : '';
-    const msg = pct >= 1 ? `<span class="over-t">Estourou em ${brl(c.ne - neLim)}</span>`
-      : `<span class="${pct >= 0.8 ? 'warn-t' : 'ok-t'}">Restam ${brl(neLim - c.ne)}</span>`;
-    h += `<div class="line"><b>${brl(c.ne)}</b><span class="mut">de ${brl(neLim)}</span></div>${bar(pct, cls)}
-      <div class="line">${msg}<span class="mut">${Math.round(pct * 100)}%</span></div>`;
-  } else {
-    h += `<div class="mut">Defina orçamento para lazer, compras e assinaturas na aba Plano.</div>`;
-  }
-  h += `</div>`;
-
-  // Cartão
-  const cap = S.settings.cardCap;
-  if (c.outCard || cap) {
-    const pct = cap ? c.outCard / cap : 0;
-    const cls = pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : '';
-    h += `<div class="card"><h3>💳 Cartão de crédito no mês</h3>
-      <div class="line"><b>${brl(c.outCard)}</b><span class="mut">${cap ? 'teto ' + brl(cap) : 'sem teto'}</span></div>
-      ${cap ? bar(pct, cls) : ''}
-      <div class="hint">Pague a fatura inteira todo mês. Compra no cartão que não cabe no mês vira dívida.</div></div>`;
+  if (neLim > 0 || cap > 0) {
+    h += `<section class="card"><div class="eyebrow">Limites do mês</div>`;
+    if (neLim > 0) h += limitRow('Gastos não essenciais', c.ne, neLim);
+    if (cap > 0) h += limitRow('Cartão de crédito', c.outCard, cap);
+    h += `</section>`;
   }
 
-  h += chartCard();
-
-  // Categorias
   const by = {};
   c.tx.filter(t => t.type === 'out').forEach(t => (by[t.cat] = (by[t.cat] || 0) + t.amount));
   const rows = Object.entries(by).sort((a, b) => b[1] - a[1]);
   if (rows.length) {
-    h += `<div class="card"><h3>Gasto por categoria <span class="mut" style="text-transform:none">(gasto / orçado)</span></h3>`;
-    rows.forEach(([name, v]) => {
-      const ci = catInfo(name), b = S.budgets[name] || 0;
-      const over = b > 0 && v > b;
-      h += `<div class="cat ${ci.e ? '' : 'ne'} ${over ? 'ov' : ''}">
-        <div class="line"><span>${ci.i} ${esc(name)}${ci.e ? '' : ' <small class="ne">não essencial</small>'}</span>
-        <b class="${over ? 'over-t' : ''}">${brl(v)}${b > 0 ? ` <small>/ ${brl(b)}</small>` : ''}</b></div>
-        ${bar(b > 0 ? v / b : 1)}</div>`;
-    });
-    h += `</div>`;
+    const show = catAll ? rows : rows.slice(0, 5);
+    h += `<section class="card"><div class="eyebrow">Gastos por categoria</div>` + show.map(([name, v]) => {
+      const b = S.budgets[name] || 0, over = b > 0 && v > b;
+      return `<div class="crow"><div class="line"><span>${esc(name)}</span><span class="n ${over ? 'crit' : ''}">${brl(v)}${b > 0 ? ` <small>de ${brl(b)}</small>` : ''}</span></div>${b > 0 ? bar(v / b, over ? 'over' : '') : ''}</div>`;
+    }).join('') + (rows.length > 5 ? `<button class="link" data-a="catall">${catAll ? 'Mostrar menos' : 'Ver todas (' + rows.length + ')'}</button>` : '') + `</section>`;
   }
 
-  // Metas e dívidas (resumo)
   if (S.goals.length || S.debts.length) {
-    h += `<div class="card"><div class="sect"><h3 style="margin:0">Metas e dívidas</h3><button class="chip" data-a="go" data-id="goals">Ver</button></div>`;
+    h += `<section class="card"><div class="head-row"><div class="eyebrow">Metas e dívidas</div><button class="link" data-a="go" data-id="goals">Abrir</button></div>`;
     S.goals.forEach(g => {
       const s = goalSaved(g), p = g.target ? s / g.target : 0;
-      h += `<div class="cat"><div class="line"><span>🎯 ${esc(g.name)}</span><b>${brl(s)} <small>/ ${brl(g.target)}</small></b></div>${bar(p, 'sav')}</div>`;
+      h += `<div class="crow"><div class="line"><span>${esc(g.name)}</span><span class="n">${brl(s)} <small>de ${brl(g.target)}</small></span></div>${bar(p)}</div>`;
     });
     S.debts.forEach(d => {
-      const left = debtLeft(d), p = d.total ? debtPaid(d) / d.total : 0;
-      h += `<div class="cat"><div class="line"><span>🧾 ${esc(d.name)}</span><b>${brl(left)} <small>restam</small></b></div>${bar(p)}</div>`;
+      const p = d.total ? debtPaid(d) / d.total : 0;
+      h += `<div class="crow"><div class="line"><span>${esc(d.name)}</span><span class="n">${brl(debtLeft(d))} <small>restam</small></span></div>${bar(p)}</div>`;
     });
-    h += `</div>`;
+    h += `</section>`;
   }
+
+  h += `<section class="card"><button class="fold" data-a="tchart"><span class="eyebrow">Evolução, últimos 6 meses</span>${ico(chartOpen ? 'chevu' : 'chevd', 18)}</button>${chartOpen ? chartBody() : ''}</section>`;
 
   $('#main').innerHTML = h;
 }
@@ -362,11 +353,10 @@ function renderTx() {
   const F = {
     all: () => true, out: t => t.type === 'out', in: t => t.type === 'in',
     card: t => t.type === 'out' && W(t) === 'card', va: t => W(t) === 'va',
-    sav: t => t.type === 'save' || t.type === 'debt',
   };
-  const CH = [['all', 'Todos'], ['out', 'Despesas'], ['in', 'Receitas'], ['card', '💳 Cartão'], ['va', '🥗 VA'], ['sav', 'Metas e dívidas']];
+  const CH = [['all', 'Todos'], ['out', 'Despesas'], ['in', 'Receitas'], ['card', 'Cartão'], ['va', 'Vale']];
   let h = `<div class="chips">${CH.map(([k, l]) => `<button class="chip ${flt === k ? 'on' : ''}" data-a="flt" data-id="${k}">${l}</button>`).join('')}</div>`;
-  h += `<div class="card">`;
+  h += `<section class="card">`;
   const list = c.tx.filter(F[flt]);
   if (!list.length) {
     h += `<div class="empty">Nada por aqui.<br>Toque em + para lançar.</div>`;
@@ -379,20 +369,19 @@ function renderTx() {
         const [yy, mm, dd] = t.date.split('-').map(Number);
         h += `<div class="day">${new Date(yy, mm - 1, dd).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}</div>`;
       }
-      const sign = t.type === 'in' ? '+' : '-';
-      const wt = WTAG[W(t)] && t.type !== 'in' ? ' · ' + WTAG[W(t)] : '';
+      const kind = t.type === 'save' ? 'Meta' : t.type === 'debt' ? 'Dívida' : '';
+      const wt = t.type === 'out' && WTAG[W(t)] ? ' · ' + WTAG[W(t)] : '';
       h += `<button class="tx" data-a="tx" data-id="${t.id}">
-        <span class="ic">${txIcon(t)}</span>
-        <span class="t"><b>${esc(t.desc || t.cat)}</b><small>${esc(t.cat)}${wt}</small></span>
-        <span class="v ${t.type}">${sign}${brl(t.amount)}</span></button>`;
+        <span class="t"><b>${esc(t.desc || t.cat)}</b><small>${kind ? kind + ' · ' : ''}${esc(t.cat)}${wt}</small></span>
+        <span class="v n ${t.type}">${t.type === 'in' ? '+' : '−'}${brl(t.amount)}</span></button>`;
     });
   }
-  h += `</div>`;
+  h += `</section>`;
   $('#main').innerHTML = h;
 }
 
 /* =====================================================================
-   PLANO (orçamento + checklist)
+   PLANO
    ===================================================================== */
 let CK = {};
 
@@ -406,48 +395,41 @@ function renderPlan() {
   const pc = v => (incTot ? Math.round((v / incTot) * 100) : 0) + '%';
   let h = '';
 
-  h += `<div class="card"><div class="sect"><h3 style="margin:0">Plano do mês</h3><button class="chip" data-a="inc">Editar renda</button></div>
-    <div class="line"><span>Renda esperada</span><b>${brl(incTot)}</b></div>
-    <div class="line"><small>Dinheiro ${brl(inc.main)} + vale alimentação ${brl(inc.va)}</small></div>
-    <div class="line sub"><span>Planejado (categorias, metas e dívidas)</span><b>${brl(planned)}</b></div>
-    <div class="line"><span>${free >= 0 ? 'Livre para alocar' : 'Falta para fechar o plano'}</span>
-      <b class="free ${free >= 0 ? 'ok-t' : 'over-t'}">${brl(Math.abs(free))}</b></div>
-    <div class="stack">
-      <div><span>Essenciais</span><span>${brl(ess)} · ${pc(ess)}</span></div>
-      <div><span>Não essenciais</span><span>${brl(ne)} · ${pc(ne)}</span></div>
-      <div><span>Dívidas</span><span>${brl(dSum)} · ${pc(dSum)}</span></div>
-      <div><span>Metas</span><span>${brl(gSum)} · ${pc(gSum)}</span></div>
-    </div>
-    ${free > 0 ? `<div class="hint">Dê um destino a esse valor: parcela do cartão, dízimo, moto. Dinheiro sem destino vira gasto.</div>` : ''}</div>`;
+  h += `<section class="card"><div class="eyebrow">Plano mensal</div>
+    <div class="kv"><span>Renda esperada</span><b class="n">${brl(incTot)}</b></div>
+    <div class="kv"><span>Planejado</span><b class="n">${brl(planned)}</b></div>
+    <div class="kv strong"><span>${free >= 0 ? 'Livre para alocar' : 'Falta para fechar o plano'}</span><b class="n ${free >= 0 ? 'pos' : 'crit'}">${brl(Math.abs(free))}</b></div>
+    <div class="sub">Essenciais ${pc(ess)} · Não essenciais ${pc(ne)} · Dívidas ${pc(dSum)} · Metas ${pc(gSum)}</div>
+    <button class="link" data-a="inc">Editar renda esperada</button></section>`;
 
-  // Checklist
   CK = {};
   const rows = [];
-  rows.push({ k: 'in-sal', i: '💼', l: 'Salário', a: inc.main, pre: { type: 'in', cat: 'Salário', desc: 'Salário' } });
-  if (inc.va > 0) rows.push({ k: 'in-va', i: '🥗', l: 'Vale alimentação', a: inc.va, pre: { type: 'in', cat: 'Vale alimentação', desc: 'Vale alimentação' } });
+  rows.push({ k: 'in-sal', l: 'Salário', a: inc.main, pre: { type: 'in', cat: 'Salário', desc: 'Salário' } });
+  if (inc.va > 0) rows.push({ k: 'in-va', l: 'Vale alimentação', a: inc.va, pre: { type: 'in', cat: 'Vale alimentação', desc: 'Vale alimentação' } });
   OUT.filter(c => c.fx && S.budgets[c.n] > 0).forEach(c =>
-    rows.push({ k: 'out-' + c.n, i: c.i, l: c.n, a: S.budgets[c.n], pre: { type: 'out', cat: c.n, wallet: 'main', desc: c.n } }));
+    rows.push({ k: 'out-' + c.n, l: c.n, a: S.budgets[c.n], pre: { type: 'out', cat: c.n, wallet: 'main', desc: c.n } }));
   S.debts.filter(d => d.installment > 0 && debtLeft(d) > 0).forEach(d =>
-    rows.push({ k: 'debt-' + d.id, i: '🧾', l: 'Parcela: ' + d.name, a: d.installment, pre: { type: 'debt', debt: d.id } }));
+    rows.push({ k: 'debt-' + d.id, l: 'Parcela: ' + d.name, a: d.installment, pre: { type: 'debt', debt: d.id } }));
   S.goals.filter(g => g.monthly > 0).forEach(g =>
-    rows.push({ k: 'goal-' + g.id, i: '🐷', l: 'Guardar: ' + g.name, a: g.monthly, pre: { type: 'save', goal: g.id } }));
+    rows.push({ k: 'goal-' + g.id, l: 'Guardar: ' + g.name, a: g.monthly, pre: { type: 'save', goal: g.id } }));
   rows.forEach(r => { r.done = S.tx.some(t => t.auto === r.k && t.date.startsWith(view)); CK[r.k] = r; });
   const nd = rows.filter(r => r.done).length;
 
-  h += `<div class="card"><div class="sect"><h3 style="margin:0">Checklist do mês</h3><span class="tag">${nd}/${rows.length}</span></div>
-    <div class="hint" style="margin:0 0 4px">Toque para lançar. Você confirma o valor real antes de salvar.</div>`;
+  h += `<section class="card"><div class="head-row"><div class="eyebrow">Checklist do mês</div><span class="tag n">${nd} de ${rows.length}</span></div>`;
   rows.forEach(r => {
-    h += `<button class="prow ${r.done ? 'ok' : ''}" data-a="ck" data-id="${esc(r.k)}"><span>${r.done ? '✅' : '⬜'} ${r.i} ${esc(r.l)}</span><b>${brl(r.a)}</b></button>`;
+    h += `<button class="ck ${r.done ? 'ok' : ''}" data-a="ck" data-id="${esc(r.k)}">
+      <svg class="ic circ" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${r.done ? IC.circle + IC.check : IC.circle}</svg>
+      <span class="t">${esc(r.l)}</span><b class="n">${brl(r.a)}</b></button>`;
   });
-  h += `</div>`;
+  h += `<div class="sub">Toque para lançar. Você confirma o valor real antes de salvar.</div></section>`;
 
-  // Orçamentos
-  h += `<div class="card"><div class="sect"><h3 style="margin:0">Orçamento por categoria</h3><button class="chip" data-a="newcat">+ Categoria</button></div>`;
-  OUT.forEach(c => {
+  const grp = (title, list) => `<div class="group"><div class="eyebrow">${title}</div>` + list.map(c => {
     const custom = S.customOut.some(x => x.n === c.n);
-    h += `<button class="prow" data-a="${custom ? 'editcat' : 'bud'}" data-id="${esc(c.n)}"><span>${c.i} ${esc(c.n)}${c.e ? '' : ' <small>não essencial</small>'}${custom ? ' <small>própria</small>' : ''}</span><b>${brl(S.budgets[c.n] || 0)}</b></button>`;
-  });
-  h += `<div class="hint">Toque numa linha para mudar o valor. Mercado é pago com o vale alimentação.</div></div>`;
+    return `<button class="prow" data-a="${custom ? 'editcat' : 'bud'}" data-id="${esc(c.n)}"><span>${esc(c.n)}${custom ? ' <small>própria</small>' : ''}</span><b class="n">${brl(S.budgets[c.n] || 0)}</b></button>`;
+  }).join('') + `</div>`;
+  h += `<section class="card"><div class="head-row"><div class="eyebrow">Orçamento por categoria</div><button class="link" data-a="newcat">Nova categoria</button></div>
+    ${grp('Essenciais', OUT.filter(c => c.e))}${grp('Não essenciais', OUT.filter(c => !c.e))}
+    <div class="sub">Mercado é pago com o vale alimentação.</div></section>`;
 
   $('#main').innerHTML = h;
 }
@@ -456,28 +438,25 @@ function renderPlan() {
    METAS E DÍVIDAS
    ===================================================================== */
 function renderGoals() {
-  let h = '';
-  h += `<div class="sect"><h3 style="margin:0;color:var(--mut);font-size:13px;text-transform:uppercase">Metas de poupança</h3><button class="chip" data-a="newgoal">+ Nova meta</button></div>`;
+  let h = `<div class="head-row"><div class="eyebrow">Metas de poupança</div><button class="link" data-a="newgoal">Nova meta</button></div>`;
   if (!S.goals.length) h += `<div class="card empty">Nenhuma meta ainda.</div>`;
   S.goals.forEach(g => {
     const s = goalSaved(g), left = Math.max(0, g.target - s), p = g.target ? s / g.target : 0;
-    const eta = left > 0 && g.monthly > 0 ? ` · ~${Math.ceil(left / g.monthly)} meses no ritmo de ${brl(g.monthly)}/mês` : '';
-    h += `<div class="card goal"><div class="head"><b>🎯 ${esc(g.name)}</b><span class="mut">${Math.round(p * 100)}%</span></div>
-      ${bar(p, 'sav')}
-      <div class="line"><span>${brl(s)}</span><span class="mut">meta ${brl(g.target)}</span></div>
-      <div class="hint">${left > 0 ? 'Faltam ' + brl(left) + eta : 'Meta atingida 🎉'}</div>
-      <div class="acts"><button class="ghost small" data-a="paygoal" data-id="${g.id}">Guardar</button><button class="ghost small" data-a="editgoal" data-id="${g.id}">Editar</button></div></div>`;
+    const eta = left > 0 && g.monthly > 0 ? `, cerca de ${Math.ceil(left / g.monthly)} meses guardando ${brl(g.monthly)} por mês` : '';
+    h += `<section class="card goal"><div class="head-row"><b>${esc(g.name)}</b><span class="mut n">${Math.round(p * 100)}%</span></div>
+      <div class="line"><b class="n">${brl(s)}</b><small>meta ${brl(g.target)}</small></div>${bar(p)}
+      <div class="sub">${left > 0 ? 'Faltam ' + brl(left) + eta : 'Meta atingida'}</div>
+      <div class="acts"><button class="ghost small" data-a="paygoal" data-id="${g.id}">Guardar</button><button class="ghost small" data-a="editgoal" data-id="${g.id}">Editar</button></div></section>`;
   });
-  h += `<div class="sect" style="margin-top:8px"><h3 style="margin:0;color:var(--mut);font-size:13px;text-transform:uppercase">Dívidas</h3><button class="chip" data-a="newdebt">+ Nova dívida</button></div>`;
+  h += `<div class="head-row" style="margin-top:8px"><div class="eyebrow">Dívidas</div><button class="link" data-a="newdebt">Nova dívida</button></div>`;
   if (!S.debts.length) h += `<div class="card empty">Nenhuma dívida cadastrada.</div>`;
   S.debts.forEach(d => {
     const left = debtLeft(d), p = d.total ? debtPaid(d) / d.total : 0;
-    const eta = d.installment > 0 && left > 0 ? `${Math.ceil(left / d.installment)} parcelas de ${brl(d.installment)}` : (left > 0 ? 'defina o valor da parcela' : 'quitada 🎉');
-    h += `<div class="card goal"><div class="head"><b>🧾 ${esc(d.name)}</b><span class="mut">${Math.round(p * 100)}% pago</span></div>
-      ${bar(p)}
-      <div class="line"><span>Saldo devedor</span><b>${brl(left)}</b></div>
-      <div class="hint">${eta}</div>
-      <div class="acts"><button class="ghost small" data-a="paydebt" data-id="${d.id}">Pagar parcela</button><button class="ghost small" data-a="editdebt" data-id="${d.id}">Editar</button></div></div>`;
+    const eta = d.installment > 0 && left > 0 ? `${Math.ceil(left / d.installment)} parcelas de ${brl(d.installment)}` : (left > 0 ? 'Defina o valor da parcela' : 'Quitada');
+    h += `<section class="card goal"><div class="head-row"><b>${esc(d.name)}</b><span class="mut n">${Math.round(p * 100)}% pago</span></div>
+      <div class="line"><span>Saldo devedor</span><b class="n">${brl(left)}</b></div>${bar(p)}
+      <div class="sub">${eta}</div>
+      <div class="acts"><button class="ghost small" data-a="paydebt" data-id="${d.id}">Pagar parcela</button><button class="ghost small" data-a="editdebt" data-id="${d.id}">Editar</button></div></section>`;
   });
   $('#main').innerHTML = h;
 }
@@ -527,7 +506,7 @@ function priceHist(it) {
   if (!it.prices.length) return '<span class="ph nop">sem preço ainda</span>';
   const min = Math.min(...it.prices.map(x => x.p));
   return it.prices.map((x, i) =>
-    `<span class="ph ${x.p === min && it.prices.length > 1 ? 'best' : ''} ${i === 0 ? 'first' : ''}">${brl(x.p)} <small>${esc(x.m || '—')}</small></span>`).join('');
+    `<span class="ph n ${x.p === min && it.prices.length > 1 ? 'best' : ''} ${i === 0 ? 'first' : ''}">${brl(x.p)} <small>${esc(x.m || '—')}</small></span>`).join('');
 }
 
 function fillLists() {
@@ -540,10 +519,10 @@ function mrow(x, done) {
   if (!it) return '';
   const val = done ? x.paid * x.qty : (it.prices[0] ? it.prices[0].p * x.qty : 0);
   return `<div class="mi ${done ? 'done' : ''}">
-    <button class="chk" data-a="chk" data-id="${x.id}" aria-label="${done ? 'desmarcar' : 'marcar como comprado'}">${done ? '✓' : ''}</button>
+    <button class="chk" data-a="chk" data-id="${x.id}" aria-label="${done ? 'Desmarcar' : 'Marcar como comprado'}">${done ? ico('check', 16) : ''}</button>
     <div class="mt" data-a="medit" data-id="${x.id}"><b>${esc(it.name)}</b> <small>${fq(x.qty)} ${esc(it.unit)}</small>
-      <div class="phr">${done ? `<span class="ph first">${brl(x.paid)}/${esc(it.unit)} <small>${esc(x.mkt || '')}</small></span>` : priceHist(it)}</div></div>
-    <div class="mv">${val ? brl(val) : '—'}</div></div>`;
+      <div class="phr">${done ? `<span class="ph first n">${brl(x.paid)}/${esc(it.unit)} <small>${esc(x.mkt || '')}</small></span>` : priceHist(it)}</div></div>
+    <div class="mv n">${val ? brl(val) : '—'}</div></div>`;
 }
 
 function renderMarket() {
@@ -555,7 +534,6 @@ function renderMarket() {
   const noPrice = pend.filter(x => !mItem(x.id).prices[0]).length;
   const got = sumBy(done, x => x.paid * x.qty);
 
-  // Mercado mais barato (itens com preço em 2+ mercados)
   const tally = {};
   m.items.forEach(it => {
     const mk = new Set(it.prices.filter(p => p.m).map(p => p.m));
@@ -565,34 +543,29 @@ function renderMarket() {
   });
   const top = Object.entries(tally).sort((a, b) => b[1] - a[1])[0];
 
-  let h = `<div class="card mhead">
-    <select id="listSel" aria-label="Lista">${m.lists.map(x => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.name)}${x.finished ? ' ✓' : ''}</option>`).join('')}</select>
-    <div class="btns">
-      <button class="ghost small" data-a="newlist">＋ Nova lista</button>
-      <button class="ghost small" data-a="replist">↻ Repetir esta</button>
-      <button class="ghost small" data-a="editlist">⋯</button>
-    </div>
-    <div class="chips" style="flex-wrap:wrap"><button class="chip" data-a="newmc">＋ Categoria</button>${S.customMc.map(c => `<button class="chip" data-a="editmc" data-id="${esc(c.n)}">${c.i} ${esc(c.n)}</button>`).join('')}</div>
-    <div class="line"><span>Estimado (pendente)</span><b>${brl(est)}</b></div>
-    ${noPrice ? `<div class="hint" style="margin:0">${noPrice} ${noPrice > 1 ? 'itens sem preço' : 'item sem preço'} no estimado</div>` : ''}
-    <div class="line"><span>Comprado</span><b class="ok-t">${brl(got)}</b></div>
-    ${top ? `<div class="hint" style="margin:0">💡 ${esc(top[0])} tem o menor preço em ${top[1]} ${top[1] > 1 ? 'itens comparados' : 'item comparado'}.</div>` : ''}
-    ${l.finished ? `<span class="tag">✓ já lançada no financeiro</span>` : (done.length ? `<button class="cta" data-a="finish">Finalizar compra (${brl(got)})</button>` : '')}
-  </div>`;
+  let h = `<section class="card">
+    <div class="mtitle"><select id="listSel" aria-label="Lista">${m.lists.map(x => `<option value="${x.id}" ${x.id === l.id ? 'selected' : ''}>${esc(x.name)}${x.finished ? ' (lançada)' : ''}</option>`).join('')}</select>
+    <button class="icon-btn" data-a="mmenu" aria-label="Opções da lista">${ico('more', 22)}</button></div>
+    <div class="msum"><div><span>Estimado</span><b class="n">${brl(est)}</b></div><div><span>Comprado</span><b class="n">${brl(got)}</b></div></div>
+    ${noPrice ? `<div class="sub">${noPrice} ${noPrice > 1 ? 'itens' : 'item'} sem preço fora do estimado</div>` : ''}
+    ${top ? `<div class="sub">${esc(top[0])} tem o menor preço em ${top[1]} ${top[1] > 1 ? 'itens comparados' : 'item comparado'}.</div>` : ''}
+    ${l.finished ? '' : (done.length ? `<button class="primary block" data-a="finish">Finalizar compra (${brl(got)})</button>` : '')}
+  </section>`;
 
   MC.forEach(c => {
     const arr = pend.filter(x => (MC.some(k => k.n === mItem(x.id).cat) ? mItem(x.id).cat : 'Outros') === c.n);
-    if (arr.length) h += `<div class="card"><h3>${c.i} ${c.n}</h3>${arr.map(x => mrow(x, false)).join('')}</div>`;
+    if (arr.length) h += `<section class="card"><div class="eyebrow">${esc(c.n)}</div>${arr.map(x => mrow(x, false)).join('')}</section>`;
   });
-  if (done.length) h += `<div class="card"><h3>✅ Concluído (${done.length})</h3>${done.map(x => mrow(x, true)).join('')}</div>`;
+  if (done.length) h += `<section class="card"><div class="eyebrow">Concluído (${done.length})</div>${done.map(x => mrow(x, true)).join('')}</section>`;
 
-  // Adicionar rápido: sugestões que ainda não estão na lista
-  const inList = new Set(l.items.map(x => (mItem(x.id) || {}).name && mItem(x.id).name.toLowerCase()));
-  const sg = SUGG.map((s, i) => ({ s, i })).filter(o => !inList.has(o.s[1].toLowerCase()));
-  if (sg.length) {
-    h += `<div class="card"><h3>${l.items.length ? 'Adicionar rápido' : 'Comece por aqui'}</h3>
-      <div class="hint" style="margin:0 0 8px">Toque para pôr na lista. Para outros itens, use o botão +.</div>
-      <div class="chips" style="flex-wrap:wrap">${sg.map(o => `<button class="chip" data-a="sugg" data-id="${o.i}">${esc(o.s[1])}</button>`).join('')}</div></div>`;
+  if (!l.items.length || showSugg) {
+    const inList = new Set(l.items.map(x => (mItem(x.id) || {}).name && mItem(x.id).name.toLowerCase()));
+    const sg = SUGG.map((s, i) => ({ s, i })).filter(o => !inList.has(o.s[1].toLowerCase()));
+    if (sg.length) {
+      h += `<section class="card"><div class="eyebrow">${l.items.length ? 'Sugestões' : 'Comece por aqui'}</div>
+        <div class="sub" style="margin:0 0 10px">Toque para pôr na lista. Para outros itens, use o botão +.</div>
+        <div class="chips" style="flex-wrap:wrap">${sg.map(o => `<button class="chip" data-a="sugg" data-id="${o.i}">${esc(o.s[1])}</button>`).join('')}</div></section>`;
+    }
   }
 
   $('#main').innerHTML = h;
@@ -605,7 +578,7 @@ function openAddItem() {
     title: 'Adicionar item',
     fields: [
       { id: 'name', l: 'Item', t: 'text', req: 1, ph: 'Ex.: Alcatra', list: 'dlItems' },
-      { id: 'cat', l: 'Categoria', t: 'select', opts: MC.map(c => ({ v: c.n, l: c.i + ' ' + c.n })), value: 'Mercearia' },
+      { id: 'cat', l: 'Categoria', t: 'select', opts: MC.map(c => ({ v: c.n, l: c.n })), value: 'Mercearia' },
       { id: 'unit', l: 'Unidade', t: 'text', value: 'un', ph: 'un, kg, L, pct' },
       { id: 'qty', l: 'Quantidade', t: 'money', value: 1 },
       { id: 'price', l: 'Preço de referência (opcional)', t: 'money', ph: '0,00' },
@@ -630,7 +603,7 @@ function openAddItem() {
 function openBuy(x) {
   const it = mItem(x.id), l = curList();
   const note = it.prices.length
-    ? `<b>Preços anteriores</b><br>${it.prices.map(p => `<span class="ph">${brl(p.p)} <small>${esc(p.m || '—')}</small></span>`).join('')}`
+    ? `<b>Preços anteriores</b><br>${it.prices.map(p => `<span class="ph n">${brl(p.p)} <small>${esc(p.m || '—')}</small></span>`).join('')}`
     : 'Primeiro registro de preço deste item.';
   fillLists();
   openForm({
@@ -645,7 +618,6 @@ function openBuy(x) {
     onSubmit: v => {
       x.done = true; x.paid = v.price; x.mkt = v.market; x.qty = v.qty;
       addPrice(it, v.price, v.market);
-      // item concluído vai para o fim da lista
       l.items = l.items.filter(y => y !== x).concat(x);
     },
   });
@@ -658,13 +630,13 @@ function openEditItem(x) {
     title: 'Editar item',
     fields: [
       { id: 'name', l: 'Nome', t: 'text', req: 1, value: it.name },
-      { id: 'cat', l: 'Categoria', t: 'select', opts: MC.map(c => ({ v: c.n, l: c.i + ' ' + c.n })), value: it.cat },
+      { id: 'cat', l: 'Categoria', t: 'select', opts: MC.map(c => ({ v: c.n, l: c.n })), value: it.cat },
       { id: 'unit', l: 'Unidade', t: 'text', value: it.unit },
       { id: 'qty', l: 'Quantidade', t: 'money', req: 1, value: x.qty },
       { id: 'price', l: 'Registrar preço agora (opcional)', t: 'money', ph: '0,00' },
       { id: 'market', l: 'Mercado desse preço', t: 'text', list: 'dlMarkets', value: M().lastMkt },
     ],
-    note: `<b>Histórico</b><br>${it.prices.length ? it.prices.map(p => `<span class="ph">${brl(p.p)} <small>${esc(p.m || '—')} · ${p.d.split('-').reverse().join('/')}</small></span>`).join('') : 'Sem preços registrados.'}`,
+    note: `<b>Histórico</b><br>${it.prices.length ? it.prices.map(p => `<span class="ph n">${brl(p.p)} <small>${esc(p.m || '—')} · ${p.d.split('-').reverse().join('/')}</small></span>`).join('') : 'Sem preços registrados.'}`,
     delLabel: 'Remover da lista',
     confirm: 'Remover este item da lista?',
     onDelete: () => { const l = curList(); l.items = l.items.filter(y => y !== x); },
@@ -683,7 +655,7 @@ function openNewList(copyCur) {
       { id: 'name', l: 'Nome da lista', t: 'text', req: 1, value: (() => { const d = new Date(); return `Lista ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; })() },
       {
         id: 'copy', l: 'Começar com os itens de', t: 'select', value: copyCur ? l.id : '',
-        opts: [{ v: '', l: '— lista em branco —' }].concat(M().lists.slice().reverse().map(x => ({ v: x.id, l: x.name }))),
+        opts: [{ v: '', l: 'Lista em branco' }].concat(M().lists.slice().reverse().map(x => ({ v: x.id, l: x.name }))),
       },
     ],
     submit: 'Criar lista',
@@ -713,9 +685,9 @@ function openFinish() {
       { id: 'amount', l: 'Valor total (R$)', t: 'money', req: 1, value: Math.round(got * 100) / 100 },
       {
         id: 'wallet', l: 'Pago com', t: 'select', value: 'va',
-        opts: [{ v: 'va', l: 'Vale alimentação' }, { v: 'main', l: 'Dinheiro / Pix / débito' }, { v: 'card', l: 'Cartão de crédito' }],
+        opts: [{ v: 'va', l: 'Vale alimentação' }, { v: 'main', l: 'Dinheiro, Pix ou débito' }, { v: 'card', l: 'Cartão de crédito' }],
       },
-      { id: 'date', l: 'Data', t: 'text', value: defaultDateIso() },
+      { id: 'date', l: 'Data', t: 'date', value: today() },
     ],
     submit: 'Lançar',
     onSubmit: v => {
@@ -725,10 +697,21 @@ function openFinish() {
     },
   });
 }
-const defaultDateIso = () => today();
+
+function openMarketMenu() {
+  const items = [
+    { l: 'Nova lista', fn: () => openNewList(false) },
+    { l: 'Repetir esta lista', fn: () => openNewList(true) },
+    { l: 'Renomear ou excluir a lista', fn: () => openEditList() },
+    { l: showSugg ? 'Ocultar sugestões de itens' : 'Mostrar sugestões de itens', fn: () => { showSugg = !showSugg; render(); } },
+    { l: 'Nova categoria do mercado', fn: () => editMc(null) },
+  ];
+  if (S.customMc.length) items.push({ l: 'Editar categorias próprias', fn: () => openActions('Categorias próprias', S.customMc.map(c => ({ l: c.n, fn: () => editMc(c.n) }))) });
+  openActions('Lista de compras', items);
+}
 
 /* =====================================================================
-   FORMULÁRIO GENÉRICO
+   FORMULÁRIO GENÉRICO E MENU DE AÇÕES
    ===================================================================== */
 let gen = null;
 function openForm(cfg) {
@@ -740,7 +723,7 @@ function openForm(cfg) {
     if (fd.t === 'select') {
       h += `<label><span>${esc(fd.l)}</span><select data-f="${fd.id}">${fd.opts.map(o => `<option value="${esc(o.v)}"${String(o.v) === String(v) ? ' selected' : ''}>${esc(o.l)}</option>`).join('')}</select></label>`;
     } else {
-      h += `<label><span>${esc(fd.l)}</span><input data-f="${fd.id}" ${fd.t === 'money' ? 'inputmode="decimal"' : ''} ${fd.list ? `list="${fd.list}"` : ''} placeholder="${esc(fd.ph || '')}" value="${esc(fd.t === 'money' ? toInput(v) : v)}"></label>`;
+      h += `<label><span>${esc(fd.l)}</span><input data-f="${fd.id}" ${fd.t === 'money' ? 'inputmode="decimal"' : ''} ${fd.t === 'date' ? 'type="date"' : ''} ${fd.list ? `list="${fd.list}"` : ''} placeholder="${esc(fd.ph || '')}" value="${esc(fd.t === 'money' ? toInput(v) : v)}"></label>`;
     }
   });
   h += `<div class="row">${cfg.onDelete ? `<button type="button" class="ghost danger" id="gDel">${esc(cfg.delLabel || 'Excluir')}</button>` : ''}
@@ -750,6 +733,15 @@ function openForm(cfg) {
   f.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheets));
   openSheet($('#sheetGen'));
   if (cfg.after) cfg.after(f);
+}
+function openActions(title, items) {
+  gen = null;
+  const f = $('#formGen');
+  f.innerHTML = `<h2>${esc(title)}</h2>` + items.map((a, i) => `<button type="button" class="act" data-i="${i}">${esc(a.l)}</button>`).join('')
+    + `<div class="row"><button type="button" class="ghost" data-close>Cancelar</button></div>`;
+  f.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheets));
+  f.querySelectorAll('.act').forEach(b => b.addEventListener('click', () => { closeSheets(); items[+b.dataset.i].fn(); }));
+  openSheet($('#sheetGen'));
 }
 $('#formGen').addEventListener('submit', e => {
   e.preventDefault();
@@ -797,20 +789,20 @@ function setType(type, p = {}) {
   $('#lblWallet').hidden = type !== 'out';
   if (type === 'out') {
     $('#catLbl').textContent = 'Categoria';
-    sel.innerHTML = OUT.map(c => `<option value="${esc(c.n)}">${c.i} ${esc(c.n)}${c.e ? '' : ' (não essencial)'}</option>`).join('');
+    sel.innerHTML = OUT.map(c => `<option value="${esc(c.n)}">${esc(c.n)}${c.e ? '' : ' (não essencial)'}</option>`).join('');
     if (p.cat) sel.value = p.cat;
     $('#fWallet').value = p.wallet || 'main';
   } else if (type === 'in') {
     $('#catLbl').textContent = 'Categoria';
-    sel.innerHTML = INC.map(c => `<option value="${esc(c.n)}">${c.i} ${esc(c.n)}</option>`).join('');
+    sel.innerHTML = INC.map(c => `<option value="${esc(c.n)}">${esc(c.n)}</option>`).join('');
     if (p.cat) sel.value = p.cat;
   } else if (type === 'save') {
     $('#catLbl').textContent = 'Meta';
-    sel.innerHTML = S.goals.map(g => `<option value="${g.id}">🎯 ${esc(g.name)}</option>`).join('');
+    sel.innerHTML = S.goals.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
     if (p.goal) sel.value = p.goal;
   } else {
     $('#catLbl').textContent = 'Dívida';
-    sel.innerHTML = S.debts.map(d => `<option value="${d.id}">🧾 ${esc(d.name)}</option>`).join('');
+    sel.innerHTML = S.debts.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
     if (p.debt) sel.value = p.debt;
   }
 }
@@ -828,7 +820,7 @@ function openTx(id, pre) {
   $('#fDesc').value = p.desc || '';
   $('#fDate').value = p.date || defaultDate();
   openSheet($('#sheetTx'));
-  if (!t && !p.amount) setTimeout(() => $('#fAmount').focus(), 300);
+  if (!t && !p.amount) setTimeout(() => $('#fAmount').focus(), 250);
 }
 
 $('#formTx').addEventListener('submit', e => {
@@ -858,12 +850,11 @@ $('#btnDel').addEventListener('click', () => {
 });
 
 /* =====================================================================
-   PLANO / METAS / DÍVIDAS: formulários
+   PLANO / METAS / DÍVIDAS / CATEGORIAS: formulários
    ===================================================================== */
 function editBudget(name) {
-  const ci = catInfo(name);
   openForm({
-    title: `${ci.i} ${name}`,
+    title: name,
     fields: [{ id: 'v', l: 'Orçamento mensal (R$)', t: 'money', value: S.budgets[name] || 0 }],
     onSubmit: v => { S.budgets[name] = v.v; },
   });
@@ -872,7 +863,7 @@ function editIncome() {
   openForm({
     title: 'Renda esperada por mês',
     fields: [
-      { id: 'main', l: 'Salário / dinheiro (R$)', t: 'money', value: S.settings.income.main },
+      { id: 'main', l: 'Salário e outras receitas em dinheiro (R$)', t: 'money', value: S.settings.income.main },
       { id: 'va', l: 'Vale alimentação (R$)', t: 'money', value: S.settings.income.va },
     ],
     onSubmit: v => { S.settings.income = { main: v.main, va: v.va }; },
@@ -898,7 +889,26 @@ function editGoal(id) {
     },
   });
 }
-const cleanIcon = (s, d) => Array.from(s || '').slice(0, 2).join('') || d;
+function editDebt(id) {
+  const d = id ? S.debts.find(x => x.id === id) : null;
+  openForm({
+    title: d ? 'Editar dívida' : 'Nova dívida',
+    note: d ? 'Depois de renegociar, atualize o saldo devedor e a parcela aqui.' : '',
+    fields: [
+      { id: 'name', l: 'Nome', t: 'text', req: 1, value: d ? d.name : '', ph: 'Ex.: Cartão' },
+      { id: 'left', l: 'Saldo devedor atual (R$)', t: 'money', req: 1, value: d ? debtLeft(d) : '' },
+      { id: 'inst', l: 'Parcela mensal (R$)', t: 'money', value: d ? d.installment : '' },
+    ],
+    onDelete: d ? () => { S.debts = S.debts.filter(x => x.id !== id); } : null,
+    confirm: 'Excluir esta dívida? Os lançamentos continuam no histórico.',
+    onSubmit: v => {
+      const o = d || { id: uid() };
+      o.name = v.name; o.installment = v.inst;
+      o.total = v.left + (d ? debtPaid(d) : 0);
+      if (!d) S.debts.push(o);
+    },
+  });
+}
 
 function editCat(name) {
   const cu = name ? S.customOut.find(x => x.n === name) : null;
@@ -906,10 +916,9 @@ function editCat(name) {
     title: cu ? 'Editar categoria' : 'Nova categoria de despesa',
     fields: [
       { id: 'name', l: 'Nome', t: 'text', req: 1, value: cu ? cu.n : '', ph: 'Ex.: Pet' },
-      { id: 'icon', l: 'Emoji (ícone)', t: 'text', value: cu ? cu.i : '🏷️' },
       {
         id: 'e', l: 'Tipo', t: 'select', value: cu && !cu.e ? '0' : '1',
-        opts: [{ v: '1', l: 'Essencial' }, { v: '0', l: 'Não essencial (entra no teto dos supérfluos)' }],
+        opts: [{ v: '1', l: 'Essencial' }, { v: '0', l: 'Não essencial (entra no limite dos supérfluos)' }],
       },
       { id: 'b', l: 'Orçamento mensal (R$)', t: 'money', value: cu ? S.budgets[cu.n] : '' },
     ],
@@ -928,9 +937,9 @@ function editCat(name) {
           delete S.budgets[cu.n];
           cu.n = v.name;
         }
-        cu.i = cleanIcon(v.icon, '🏷️'); cu.e = +v.e;
+        cu.e = +v.e;
       } else {
-        S.customOut.push({ n: v.name, i: cleanIcon(v.icon, '🏷️'), e: +v.e, fx: 0 });
+        S.customOut.push({ n: v.name, e: +v.e, fx: 0 });
       }
       S.budgets[v.name] = v.b;
       syncCats();
@@ -942,10 +951,7 @@ function editMc(name) {
   const cu = name ? S.customMc.find(x => x.n === name) : null;
   openForm({
     title: cu ? 'Editar categoria do mercado' : 'Nova categoria do mercado',
-    fields: [
-      { id: 'name', l: 'Nome', t: 'text', req: 1, value: cu ? cu.n : '', ph: 'Ex.: Bebê' },
-      { id: 'icon', l: 'Emoji (ícone)', t: 'text', value: cu ? cu.i : '🏷️' },
-    ],
+    fields: [{ id: 'name', l: 'Nome', t: 'text', req: 1, value: cu ? cu.n : '', ph: 'Ex.: Bebê' }],
     onDelete: cu ? () => {
       M().items.forEach(it => { if (it.cat === cu.n) it.cat = 'Outros'; });
       S.customMc = S.customMc.filter(x => x.n !== cu.n);
@@ -956,30 +962,8 @@ function editMc(name) {
       if (MC.some(c => c.n.toLowerCase() === v.name.toLowerCase() && (!cu || c.n !== cu.n))) { alert('Já existe uma categoria com esse nome.'); return false; }
       if (cu) {
         if (cu.n !== v.name) { M().items.forEach(it => { if (it.cat === cu.n) it.cat = v.name; }); cu.n = v.name; }
-        cu.i = cleanIcon(v.icon, '🏷️');
-      } else S.customMc.push({ n: v.name, i: cleanIcon(v.icon, '🏷️') });
+      } else S.customMc.push({ n: v.name });
       syncCats();
-    },
-  });
-}
-
-function editDebt(id) {
-  const d = id ? S.debts.find(x => x.id === id) : null;
-  openForm({
-    title: d ? 'Editar dívida' : 'Nova dívida',
-    note: d ? 'Depois de renegociar, atualize o saldo devedor e a parcela aqui.' : '',
-    fields: [
-      { id: 'name', l: 'Nome', t: 'text', req: 1, value: d ? d.name : '', ph: 'Ex.: Cartão' },
-      { id: 'left', l: 'Saldo devedor atual (R$)', t: 'money', req: 1, value: d ? debtLeft(d) : '' },
-      { id: 'inst', l: 'Parcela mensal (R$)', t: 'money', value: d ? d.installment : '' },
-    ],
-    onDelete: d ? () => { S.debts = S.debts.filter(x => x.id !== id); } : null,
-    confirm: 'Excluir esta dívida? Os lançamentos continuam no histórico.',
-    onSubmit: v => {
-      const o = d || { id: uid() };
-      o.name = v.name; o.installment = v.inst;
-      o.total = v.left + (d ? debtPaid(d) : 0);
-      if (!d) S.debts.push(o);
     },
   });
 }
@@ -1026,6 +1010,7 @@ $('#btnWipe').addEventListener('click', () => {
     S = defaults(); syncCats(); persist(); closeSheets(); render();
   }
 });
+$('#verLbl').textContent = 'Versão ' + APP_VERSION;
 
 /* =====================================================================
    EVENTOS GLOBAIS
@@ -1060,19 +1045,17 @@ const ACT = {
     if (x.done) { x.done = false; delete x.paid; delete x.mkt; persist(); render(); } else openBuy(x);
   },
   medit: id => { const x = curList().items.find(y => y.id === id); if (x) openEditItem(x); },
-  newlist: () => openNewList(false),
-  replist: () => openNewList(true),
-  editlist: () => openEditList(),
+  mmenu: () => openMarketMenu(),
   finish: () => openFinish(),
-  newcat: () => editCat(null),
-  editcat: id => editCat(id),
-  newmc: () => editMc(null),
-  editmc: id => editMc(id),
-  cm: id => { chartMode = id; render(); },
   sugg: id => {
     const s = SUGG[+id], it = addCatalog(s[1], s[0], 'un');
     addToList(curList(), it.id, 1); persist(); render();
   },
+  newcat: () => editCat(null),
+  editcat: id => editCat(id),
+  cm: id => { chartMode = id; render(); },
+  tchart: () => { chartOpen = !chartOpen; render(); },
+  catall: () => { catAll = !catAll; render(); },
 };
 $('#main').addEventListener('click', e => {
   const a = e.target.closest('[data-a]');
@@ -1082,9 +1065,43 @@ $('#main').addEventListener('change', e => {
   if (e.target.id === 'listSel') { M().cur = e.target.value; persist(); render(); }
 });
 
-/* ---------- PWA ---------- */
+/* =====================================================================
+   ÍCONES ESTÁTICOS
+   ===================================================================== */
+document.querySelectorAll('[data-ic]').forEach(el => {
+  el.innerHTML = ico(el.dataset.ic, el.closest('#tabs') ? 22 : el.id === 'fab' ? 24 : 22);
+});
+
+/* =====================================================================
+   PWA E AVISO DE NOVA VERSÃO
+   ===================================================================== */
+let userAskedUpdate = false;
+function showUpdate(worker) {
+  $('#update').hidden = false;
+  $('#btnUpdate').onclick = () => {
+    userAskedUpdate = true;
+    $('#btnUpdate').disabled = true;
+    $('#btnUpdate').textContent = 'Atualizando';
+    worker.postMessage({ type: 'SKIP_WAITING' });
+    // se o navegador não trocar o service worker, recarrega do mesmo jeito
+    setTimeout(() => { if (userAskedUpdate) location.reload(); }, 4000);
+  };
+}
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (userAskedUpdate) location.reload(); });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const offer = w => { if (w && navigator.serviceWorker.controller) showUpdate(w); };
+      if (reg.waiting) offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+      });
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60 * 1000);
+    }).catch(() => {});
+  });
 }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
