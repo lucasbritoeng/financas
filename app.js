@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '4.1';
+const APP_VERSION = '4.2';
 
 /* =====================================================================
    ÍCONES (traço, uma cor, herdam a cor do texto)
@@ -96,6 +96,8 @@ function defaults() {
     debts: [],
     car: {},
     fuel: [],
+    maint: [],
+    rec: [],
     market: { items: [], lists: [], cur: null, markets: [], lastMkt: '' },
   };
 }
@@ -145,7 +147,7 @@ function syncCats() {
   OUT.forEach(c => { if (S.budgets[c.n] == null) S.budgets[c.n] = c.b || 0; });
 }
 syncCats();
-function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (typeof checkBackup === 'function') checkBackup(); }
 
 /* =====================================================================
    UTILIDADES
@@ -312,6 +314,18 @@ function renderHome() {
     h += `<button class="note-btn" data-a="go" data-id="plan"><span>Lançar salário e contas do mês</span>${ico('right', 18)}</button>`;
   }
 
+  if (view === thisMonth()) {
+    const pend = checklistRows().filter(r => r.rec && !r.done);
+    if (pend.length) {
+      h += `<section class="card"><div class="head-row"><div class="eyebrow">Contas a pagar</div><button class="link" data-a="go" data-id="plan">Ver todas</button></div>`;
+      pend.slice(0, 3).forEach(r => {
+        h += `<button class="ck ${r.late ? 'late' : ''}" data-a="ck" data-id="${esc(r.k)}"><span class="t">${esc(r.l)} <small>dia ${r.day}</small></span><b class="n">${brl(r.a)}</b></button>`;
+      });
+      if (pend.length > 3) h += `<div class="sub">e mais ${pend.length - 3}</div>`;
+      h += `</section>`;
+    }
+  }
+
   if (neLim > 0 || cap > 0) {
     h += `<section class="card"><div class="eyebrow">Limites do mês</div>`;
     if (neLim > 0) h += limitRow('Gastos não essenciais', c.ne, neLim);
@@ -388,6 +402,35 @@ function renderTx() {
    ===================================================================== */
 let CK = {};
 
+const recDay = r => { const [y, m] = view.split('-').map(Number); return Math.min(r.day, new Date(y, m, 0).getDate()); };
+const recDone = r => S.tx.some(t => (t.auto === 'rec-' + r.id || (r.alt && t.auto === r.alt)) && t.date.startsWith(view));
+
+function checklistRows() {
+  const inc = S.settings.income;
+  CK = {};
+  const rows = [];
+  rows.push({ k: 'in-sal', l: 'Salário', a: inc.main, pre: { type: 'in', cat: 'Salário', desc: 'Salário' } });
+  if (inc.va > 0) rows.push({ k: 'in-va', l: 'Vale alimentação', a: inc.va, pre: { type: 'in', cat: 'Vale alimentação', desc: 'Vale alimentação' } });
+  const recs = S.rec.slice().sort((x, y) => x.day - y.day);
+  recs.forEach(r => rows.push({
+    k: 'rec-' + r.id, l: r.name, a: r.amount, day: recDay(r), rec: r,
+    pre: { type: 'out', cat: r.cat, wallet: r.wallet || 'main', desc: r.name },
+  }));
+  const covered = new Set(S.rec.map(r => r.cat));
+  OUT.filter(c => c.fx && S.budgets[c.n] > 0 && !covered.has(c.n)).forEach(c =>
+    rows.push({ k: 'out-' + c.n, l: c.n, a: S.budgets[c.n], pre: { type: 'out', cat: c.n, wallet: 'main', desc: c.n } }));
+  S.debts.filter(d => d.installment > 0 && debtLeft(d) > 0).forEach(d =>
+    rows.push({ k: 'debt-' + d.id, l: 'Parcela: ' + d.name, a: d.installment, pre: { type: 'debt', debt: d.id } }));
+  S.goals.filter(g => g.monthly > 0).forEach(g =>
+    rows.push({ k: 'goal-' + g.id, l: 'Guardar: ' + g.name, a: g.monthly, pre: { type: 'save', goal: g.id } }));
+  rows.forEach(r => {
+    r.done = r.rec ? recDone(r.rec) : S.tx.some(t => t.auto === r.k && t.date.startsWith(view));
+    r.late = !r.done && r.day && view === thisMonth() && r.day < +today().slice(8);
+    CK[r.k] = r;
+  });
+  return rows;
+}
+
 function renderPlan() {
   const inc = S.settings.income, incTot = inc.main + inc.va;
   const catSum = sumBy(OUT, c => S.budgets[c.n]);
@@ -405,26 +448,17 @@ function renderPlan() {
     <div class="sub">Essenciais ${pc(ess)} · Não essenciais ${pc(ne)} · Dívidas ${pc(dSum)} · Metas ${pc(gSum)}</div>
     <button class="link" data-a="inc">Editar renda esperada</button></section>`;
 
-  CK = {};
-  const rows = [];
-  rows.push({ k: 'in-sal', l: 'Salário', a: inc.main, pre: { type: 'in', cat: 'Salário', desc: 'Salário' } });
-  if (inc.va > 0) rows.push({ k: 'in-va', l: 'Vale alimentação', a: inc.va, pre: { type: 'in', cat: 'Vale alimentação', desc: 'Vale alimentação' } });
-  OUT.filter(c => c.fx && S.budgets[c.n] > 0).forEach(c =>
-    rows.push({ k: 'out-' + c.n, l: c.n, a: S.budgets[c.n], pre: { type: 'out', cat: c.n, wallet: 'main', desc: c.n } }));
-  S.debts.filter(d => d.installment > 0 && debtLeft(d) > 0).forEach(d =>
-    rows.push({ k: 'debt-' + d.id, l: 'Parcela: ' + d.name, a: d.installment, pre: { type: 'debt', debt: d.id } }));
-  S.goals.filter(g => g.monthly > 0).forEach(g =>
-    rows.push({ k: 'goal-' + g.id, l: 'Guardar: ' + g.name, a: g.monthly, pre: { type: 'save', goal: g.id } }));
-  rows.forEach(r => { r.done = S.tx.some(t => t.auto === r.k && t.date.startsWith(view)); CK[r.k] = r; });
+  const rows = checklistRows();
   const nd = rows.filter(r => r.done).length;
 
   h += `<section class="card"><div class="head-row"><div class="eyebrow">Checklist do mês</div><span class="tag n">${nd} de ${rows.length}</span></div>`;
   rows.forEach(r => {
-    h += `<button class="ck ${r.done ? 'ok' : ''}" data-a="ck" data-id="${esc(r.k)}">
+    h += `<button class="ck ${r.done ? 'ok' : ''} ${r.late ? 'late' : ''}" data-a="ck" data-id="${esc(r.k)}">
       <svg class="ic circ" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${r.done ? IC.circle + IC.check : IC.circle}</svg>
-      <span class="t">${esc(r.l)}</span><b class="n">${brl(r.a)}</b></button>`;
+      <span class="t">${esc(r.l)}${r.day ? ` <small>dia ${r.day}</small>` : ''}</span><b class="n">${brl(r.a)}</b></button>`;
   });
-  h += `<div class="sub">Toque para lançar. Você confirma o valor real antes de salvar.</div></section>`;
+  h += `<div class="sub">Toque para dar baixa. Você confirma o valor real antes de salvar.</div>
+    <button class="link" data-a="recs">Contas recorrentes</button></section>`;
 
   const grp = (title, list) => `<div class="group"><div class="eyebrow">${title}</div>` + list.map(c => {
     const custom = S.customOut.some(x => x.n === c.n);
@@ -839,6 +873,7 @@ $('#formTx').addEventListener('submit', e => {
   else if (curType === 'save') { obj.goal = val; obj.cat = (S.goals.find(g => g.id === val) || {}).name; }
   else { obj.debt = val; obj.cat = (S.debts.find(d => d.id === val) || {}).name; }
   if (editing) S.tx = S.tx.map(t => (t.id === editing ? obj : t)); else S.tx.push(obj);
+  if (curAuto && curAuto.startsWith('rec-') && curType === 'out') { const rr = S.rec.find(x => 'rec-' + x.id === curAuto); if (rr) rr.amount = amount; }
   persist();
   view = obj.date.slice(0, 7);
   closeSheets();
@@ -1004,8 +1039,52 @@ function fuelMonth(mo) {
   return { inMo, amount, liters, km, ppl: liters ? amount / liters : 0, cpk: km ? amount / km : 0 };
 }
 
+const MAINT_TYPES = ['Óleo e filtros', 'Pneus', 'Freios', 'Suspensão', 'Bateria', 'Revisão', 'Elétrica', 'Lanternagem e pintura', 'Outros'];
+const DOC_TYPES = ['Licenciamento', 'IPVA', 'Seguro', 'Multa', 'Outro documento'];
+const maintIn = mo => S.maint.filter(x => x.date.startsWith(mo));
+const addMonths = (ds, n) => {
+  const [y, m, d] = ds.split('-').map(Number), last = new Date(y, m - 1 + n + 1, 0).getDate();
+  const t = new Date(y, m - 1 + n, Math.min(d, last));
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+};
+const daysTo = ds => { const [y, m, d] = ds.split('-').map(Number), n = new Date(); return Math.round((new Date(y, m - 1, d) - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5); };
+
+function carCosts(mo) {
+  const f = fuelMonth(mo).amount, mm = maintIn(mo);
+  const o = sumBy(mm.filter(x => x.kind === 'maint'), x => x.amount), d = sumBy(mm.filter(x => x.kind === 'doc'), x => x.amount);
+  return { f, o, d, total: f + o + d };
+}
+function carOverall() {
+  const dates = S.fuel.map(x => x.date).concat(S.maint.map(x => x.date)).sort();
+  if (!dates.length) return null;
+  const [fy, fm] = dates[0].split('-').map(Number), [ty, tm] = thisMonth().split('-').map(Number);
+  const months = Math.max(1, (ty - fy) * 12 + (tm - fm) + 1);
+  const fuel = sumBy(S.fuel, x => x.amount), oficina = sumBy(S.maint.filter(x => x.kind === 'maint'), x => x.amount);
+  const docs = S.maint.filter(x => x.kind === 'doc');
+  const cut = addMonths(today(), -12), docs12 = sumBy(docs.filter(x => x.date > cut), x => x.amount);
+  const total = fuel + oficina + sumBy(docs, x => x.amount);
+  const odos = S.fuel.map(x => x.odo), km = odos.length > 1 ? Math.max(...odos) - Math.min(...odos) : 0;
+  return { first: dates[0], months, total, avg: (fuel + oficina) / months + docs12 / 12, cpk: km ? total / km : 0 };
+}
+function carReminders() {
+  const latest = {};
+  S.maint.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(x => { if (x.nextKm || x.nextDate) latest[x.kind + x.type] = x; });
+  const odo = curOdo(), out = [];
+  Object.values(latest).forEach(x => {
+    if (x.nextKm && odo) {
+      const r = x.nextKm - odo;
+      out.push({ l: x.type, t: r >= 0 ? `faltam ${nf(r)} km` : `passou ${nf(-r)} km`, cls: r < 0 ? 'crit' : r <= 500 ? 'warn' : '', s: r < 0 ? -1e9 + r : r });
+    }
+    if (x.nextDate) {
+      const d = daysTo(x.nextDate);
+      out.push({ l: x.type, t: d >= 0 ? `em ${d} ${d === 1 ? 'dia' : 'dias'}` : `venceu há ${-d} ${d === -1 ? 'dia' : 'dias'}`, cls: d < 0 ? 'crit' : d <= 30 ? 'warn' : '', s: d * 40 });
+    }
+  });
+  return out.sort((a, b) => a.s - b.s);
+}
+
 function renderCar() {
-  const c = S.car || {}, m = fuelMonth(view), cs = consumption(), odo = curOdo();
+  const c = S.car || {}, m = fuelMonth(view), cs = consumption(), odo = curOdo(), cc = carCosts(view), ov = carOverall(), rem = carReminders();
   const has = c.model || c.plate;
   let h = `<section class="card"><div class="head-row"><div class="eyebrow">Veículo</div><button class="link" data-a="editcar">${has ? 'Editar' : 'Cadastrar'}</button></div>`;
   if (has) {
@@ -1014,6 +1093,24 @@ function renderCar() {
     h += `<div class="kv"><span>Odômetro</span><b class="n">${odo ? nf(odo) + ' km' : '—'}</b></div>`;
   } else h += `<div class="sub">Cadastre modelo, placa e o km atual do carro.</div>`;
   h += `</section>`;
+
+  h += `<section class="card"><div class="eyebrow">Custo do carro no mês</div>
+    <div class="kv"><span>Combustível</span><b class="n">${brl(cc.f)}</b></div>
+    <div class="kv"><span>Oficina</span><b class="n">${brl(cc.o)}</b></div>
+    <div class="kv"><span>Documentos e taxas</span><b class="n">${brl(cc.d)}</b></div>
+    <div class="kv strong"><span>Total do mês</span><b class="n">${brl(cc.total)}</b></div>`;
+  if (ov) {
+    h += `<div class="kv"><span>Média mensal</span><b class="n">${brl(ov.avg)}</b></div>
+      <div class="kv"><span>Total desde ${ov.first.split('-').reverse().join('/')}</span><b class="n">${brl(ov.total)}</b></div>
+      ${ov.cpk ? `<div class="kv"><span>Custo por km, geral</span><b class="n">${brl(ov.cpk)}</b></div>` : ''}
+      <div class="sub">Média de ${ov.months} ${ov.months > 1 ? 'meses' : 'mês'}. Documentos entram divididos por 12.</div>`;
+  }
+  h += `</section>`;
+
+  if (rem.length) {
+    h += `<section class="card"><div class="eyebrow">Próximos vencimentos</div>` +
+      rem.map(r => `<div class="kv"><span>${esc(r.l)}</span><b class="${r.cls}">${r.t}</b></div>`).join('') + `</section>`;
+  }
 
   h += `<section class="card"><div class="eyebrow">Consumo</div>`;
   if (cs.n) {
@@ -1026,7 +1123,6 @@ function renderCar() {
   h += `</section>`;
 
   h += `<section class="card"><div class="eyebrow">Combustível no mês</div>
-    <div class="kv strong"><span>Gasto</span><b class="n">${brl(m.amount)}</b></div>
     <div class="kv"><span>Litros</span><b class="n">${nf(m.liters, 1)} L</b></div>
     <div class="kv"><span>Preço médio por litro</span><b class="n">${m.ppl ? brl(m.ppl) : '—'}</b></div>
     <div class="kv"><span>Km rodados</span><b class="n">${m.km ? nf(m.km) + ' km' : '—'}</b></div>
@@ -1041,7 +1137,91 @@ function renderCar() {
       <span class="v n out">${brl(x.amount)}</span></button>`;
   });
   h += `</section>`;
+
+  const mm = maintIn(view).slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (mm.length) {
+    h += `<section class="card"><div class="eyebrow">Oficina e documentos</div>` + mm.map(x => {
+      const d = x.date.split('-').reverse().slice(0, 2).join('/');
+      return `<button class="tx" data-a="maint" data-id="${x.id}"><span class="t"><b>${d} · ${esc(x.type)}</b>
+        <small>${esc(x.desc || (x.kind === 'doc' ? 'Documento' : 'Oficina'))}${x.odo ? ' · ' + nf(x.odo) + ' km' : ''}</small></span>
+        <span class="v n out">${brl(x.amount)}</span></button>`;
+    }).join('') + `</section>`;
+  }
   $('#main').innerHTML = h;
+}
+
+function openMaint(id, kind) {
+  const x = id ? S.maint.find(y => y.id === id) : null;
+  kind = x ? x.kind : kind;
+  const doc = kind === 'doc', types = doc ? DOC_TYPES : MAINT_TYPES;
+  const fields = [
+    { id: 'type', l: doc ? 'Documento ou taxa' : 'Serviço', t: 'select', value: x ? x.type : types[0], opts: types.map(t => ({ v: t, l: t })) },
+    { id: 'date', l: 'Data', t: 'date', value: x ? x.date : defaultDate() },
+    { id: 'amount', l: 'Valor (R$)', t: 'money', req: 1, value: x ? x.amount : '', ph: '0,00' },
+    { id: 'desc', l: 'Descrição (opcional)', t: 'text', value: x ? x.desc : '', ph: doc ? 'Ex.: exercício 2026' : 'Ex.: troca de pastilhas' },
+  ];
+  if (!doc) fields.push({ id: 'odo', l: 'Odômetro (km, opcional)', t: 'int', value: x ? x.odo : (curOdo() || '') });
+  if (!doc) fields.push({ id: 'everyKm', l: 'Lembrar a cada (km, opcional)', t: 'int', value: x ? x.everyKm : '', ph: 'Ex.: 10000' });
+  fields.push({ id: 'everyMonths', l: 'Lembrar a cada (meses, opcional)', t: 'int', value: x ? x.everyMonths : (doc ? 12 : ''), ph: 'Ex.: 12' });
+  if (!x) {
+    fields.push({ id: 'launch', l: 'Lançar também no financeiro (Carro)', t: 'select', value: '1', opts: [{ v: '1', l: 'Sim' }, { v: '0', l: 'Não, já lancei' }] });
+    fields.push({ id: 'wallet', l: 'Pago com', t: 'select', value: 'main', opts: [{ v: 'main', l: 'Dinheiro, Pix ou débito' }, { v: 'card', l: 'Cartão de crédito' }] });
+  }
+  openForm({
+    title: x ? 'Editar registro' : (doc ? 'Documento ou taxa' : 'Manutenção ou oficina'),
+    note: x ? (x.tx ? 'Este registro está ligado a um lançamento em Carro. Ao salvar, o lançamento também é atualizado.' : '')
+      : 'Se esse gasto já está lançado (por exemplo, veio do extrato), escolha "Não" em lançar no financeiro.',
+    fields,
+    delLabel: 'Excluir',
+    confirm: 'Excluir este registro?' + (x && x.tx ? ' O lançamento ligado em Carro também será excluído.' : ''),
+    onDelete: x ? () => { if (x.tx) S.tx = S.tx.filter(t => t.id !== x.tx); S.maint = S.maint.filter(y => y.id !== x.id); } : null,
+    onSubmit: v => {
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(v.date) ? v.date : today();
+      const o = x || { id: uid(), kind };
+      const odo = doc ? 0 : v.odo;
+      Object.assign(o, {
+        type: v.type, date, amount: v.amount, desc: v.desc, odo,
+        everyKm: doc ? 0 : v.everyKm, everyMonths: v.everyMonths,
+        nextKm: !doc && v.everyKm ? (odo || curOdo()) + v.everyKm : 0,
+        nextDate: v.everyMonths ? addMonths(date, v.everyMonths) : '',
+      });
+      if (!x) {
+        S.maint.push(o);
+        if (v.launch === '1') {
+          const t = { id: uid(), type: 'out', cat: 'Carro', wallet: v.wallet, amount: v.amount, desc: v.type + (v.desc ? ' ' + v.desc : ''), date, maint: o.id };
+          S.tx.push(t); o.tx = t.id;
+        }
+      } else if (o.tx) {
+        const t = S.tx.find(y => y.id === o.tx);
+        if (t) { t.amount = v.amount; t.date = date; }
+      }
+      view = date.slice(0, 7);
+    },
+  });
+}
+
+function editRec(id) {
+  const r = id ? S.rec.find(x => x.id === id) : null;
+  openForm({
+    title: r ? 'Editar conta recorrente' : 'Nova conta recorrente',
+    note: 'Aparece todo mês no Plano e no Início. Ao dar baixa você confirma o valor real, e o valor do mês seguinte passa a ser o último pago.',
+    fields: [
+      { id: 'name', l: 'Nome', t: 'text', req: 1, value: r ? r.name : '', ph: 'Ex.: Energia' },
+      { id: 'cat', l: 'Categoria', t: 'select', value: r ? r.cat : 'Casa e utilidades', opts: OUT.map(c => ({ v: c.n, l: c.n })) },
+      { id: 'amount', l: 'Valor estimado (R$)', t: 'money', req: 1, value: r ? r.amount : '' },
+      { id: 'day', l: 'Dia do vencimento (1 a 31)', t: 'int', req: 1, value: r ? r.day : '' },
+      { id: 'wallet', l: 'Pago com', t: 'select', value: r ? (r.wallet || 'main') : 'main', opts: [{ v: 'main', l: 'Dinheiro, Pix ou débito' }, { v: 'card', l: 'Cartão de crédito' }, { v: 'va', l: 'Vale alimentação' }] },
+    ],
+    delLabel: 'Excluir',
+    confirm: 'Excluir esta conta recorrente? Os lançamentos já feitos continuam.',
+    onDelete: r ? () => { S.rec = S.rec.filter(x => x.id !== id); } : null,
+    onSubmit: v => {
+      if (v.day < 1 || v.day > 31) { alert('Informe um dia entre 1 e 31.'); return false; }
+      const o = r || { id: uid() };
+      Object.assign(o, { name: v.name, cat: v.cat, amount: v.amount, day: v.day, wallet: v.wallet });
+      if (!r) S.rec.push(o);
+    },
+  });
 }
 
 function editCar() {
@@ -1114,16 +1294,20 @@ function mergePlan(d) {
   return {
     tx: (d.tx || []).filter(t => okTx(t) && !S.tx.some(x => x.id === t.id)),
     fuel: (d.fuel || []).filter(x => okFuel(x) && !S.fuel.some(y => y.id === x.id)),
+    maint: (d.maint || []).filter(x => x && x.id && x.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(x.date) && !S.maint.some(y => y.id === x.id)),
     debts: (d.debts || []).filter(x => x && x.id),
     goals: (d.goals || []).filter(x => x && x.id),
+    rec: (d.rec || []).filter(x => x && x.id && x.name && x.day >= 1 && x.day <= 31),
   };
 }
 function applyMerge(d, p) {
   p.tx.forEach(t => S.tx.push(t));
   p.fuel.forEach(x => S.fuel.push(x));
+  p.maint.forEach(x => S.maint.push(x));
   const upsert = (arr, x, base) => { const o = arr.find(y => y.id === x.id); if (o) Object.assign(o, x); else arr.push({ ...base, ...x }); };
   p.debts.forEach(x => upsert(S.debts, x, { name: 'Dívida', total: 0, installment: 0 }));
   p.goals.forEach(x => upsert(S.goals, x, { name: 'Meta', target: 0, start: 0, monthly: 0 }));
+  p.rec.forEach(x => upsert(S.rec, x, { cat: 'Outros', amount: 0, wallet: 'main' }));
   if (d.settings) {
     if (d.settings.income) S.settings.income = { ...S.settings.income, ...d.settings.income };
     if (d.settings.cardCap != null) S.settings.cardCap = d.settings.cardCap;
@@ -1146,14 +1330,43 @@ $('#formSet').addEventListener('submit', e => {
   S.settings.cardCap = parseMoney($('#sCardCap').value);
   persist(); closeSheets(); render();
 });
-$('#btnExport').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+/* ---- backup ---- */
+const META = 'financas-meta', DAYMS = 864e5, BACKUP_EVERY = 5;
+const getMeta = () => { try { return JSON.parse(localStorage.getItem(META)) || {}; } catch (e) { return {}; } };
+const setMeta = o => { try { localStorage.setItem(META, JSON.stringify({ ...getMeta(), ...o })); } catch (e) {} };
+
+function backupLabel() {
+  const m = getMeta();
+  $('#verLbl').textContent = 'Versão ' + APP_VERSION + (m.lastBackup ? ' · Último backup em ' + new Date(m.lastBackup).toLocaleDateString('pt-BR') : ' · Nenhum backup feito ainda');
+}
+function checkBackup() {
+  const m = getMeta(), now = Date.now();
+  const days = m.lastBackup ? Math.floor((now - m.lastBackup) / DAYMS) : null;
+  const due = S.tx.length > 0 && (days === null || days >= BACKUP_EVERY);
+  const snoozed = m.snooze && now < m.snooze;
+  $('#bk').hidden = !(due && !snoozed);
+  $('#bkTxt').textContent = days === null ? 'Você ainda não fez backup' : `Último backup há ${days} dias`;
+  backupLabel();
+}
+async function exportBackup() {
+  const name = `financas-backup-${today()}.json`;
+  const file = new File([JSON.stringify(S, null, 2)], name, { type: 'application/json' });
+  const done = () => { setMeta({ lastBackup: Date.now(), snooze: 0 }); checkBackup(); };
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Backup Finanças' }); done(); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `financas-backup-${today()}.json`;
+  a.href = URL.createObjectURL(file);
+  a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-});
+  done();
+}
+$('#btnExport').addEventListener('click', exportBackup);
+$('#btnBk').addEventListener('click', exportBackup);
+$('#btnBkLater').addEventListener('click', () => { setMeta({ snooze: Date.now() + DAYMS }); checkBackup(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkBackup(); });
+setInterval(checkBackup, 60 * 60 * 1000);
 $('#btnImport').addEventListener('click', () => $('#fileImport').click());
 $('#fileImport').addEventListener('change', e => {
   const f = e.target.files[0];
@@ -1182,7 +1395,7 @@ $('#fileMerge').addEventListener('change', e => {
       if (!d || d.kind !== 'merge') throw 0;
       const p = mergePlan(d);
       const msg = `Adicionar ${p.tx.length} lançamento(s) novo(s)` + (p.fuel.length ? `, ${p.fuel.length} abastecimento(s)` : '')
-        + ((p.debts.length + p.goals.length) ? ` e atualizar ${p.debts.length + p.goals.length} meta(s)/dívida(s)` : '') + '? Nada do que já existe é apagado.';
+        + (p.maint.length ? `, ${p.maint.length} registro(s) do carro` : '') + ((p.debts.length + p.goals.length + p.rec.length) ? ` e atualizar ${p.debts.length + p.goals.length + p.rec.length} meta(s), dívida(s) ou conta(s) recorrente(s)` : '') + '? Nada do que já existe é apagado.';
       if (!confirm(msg)) return;
       applyMerge(d, p);
       persist(); syncCats(); closeSheets(); render();
@@ -1196,7 +1409,7 @@ $('#btnWipe').addEventListener('click', () => {
     S = defaults(); syncCats(); persist(); closeSheets(); render();
   }
 });
-$('#verLbl').textContent = 'Versão ' + APP_VERSION;
+checkBackup();
 
 /* =====================================================================
    EVENTOS GLOBAIS
@@ -1210,7 +1423,7 @@ function shiftMonth(d) {
 $('#prev').addEventListener('click', () => shiftMonth(-1));
 $('#next').addEventListener('click', () => shiftMonth(1));
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
-$('#fab').addEventListener('click', () => (tab === 'market' ? openAddItem() : tab === 'car' ? openFuel(null) : openTx()));
+$('#fab').addEventListener('click', () => (tab === 'market' ? openAddItem() : tab === 'car' ? openActions('Registrar', [{ l: 'Abastecimento', fn: () => openFuel(null) }, { l: 'Manutenção ou oficina', fn: () => openMaint(null, 'maint') }, { l: 'Documento ou taxa (licenciamento, IPVA, seguro)', fn: () => openMaint(null, 'doc') }]) : openTx()));
 
 const ACT = {
   go: id => setTab(id),
@@ -1243,7 +1456,10 @@ const ACT = {
   tchart: () => { chartOpen = !chartOpen; render(); },
   catall: () => { catAll = !catAll; render(); },
   fuel: id => openFuel(id),
+  maint: id => openMaint(id),
   editcar: () => editCar(),
+  recs: () => openActions('Contas recorrentes', [{ l: 'Nova conta recorrente', fn: () => editRec(null) }]
+    .concat(S.rec.slice().sort((x, y) => x.day - y.day).map(r => ({ l: `${r.name}, dia ${r.day}, ${brl(r.amount)}`, fn: () => editRec(r.id) })))),
 };
 $('#main').addEventListener('click', e => {
   const a = e.target.closest('[data-a]');
