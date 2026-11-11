@@ -32,10 +32,11 @@
 
 <nav id="tabs">
   <button data-tab="home"><span data-ic="home"></span>Início</button>
-  <button data-tab="tx"><span data-ic="receipt"></span>Lançamentos</button>
+  <button data-tab="tx"><span data-ic="receipt"></span>Extrato</button>
   <button data-tab="market"><span data-ic="cart"></span>Mercado</button>
   <button data-tab="plan"><span data-ic="plan"></span>Plano</button>
   <button data-tab="goals"><span data-ic="target"></span>Metas</button>
+  <button data-tab="car"><span data-ic="car"></span>Carro</button>
 </nav>
 
 <datalist id="dlItems"></datalist>
@@ -100,11 +101,15 @@
     <h3>Dados</h3>
     <div class="row wrap">
       <button type="button" class="ghost small" id="btnExport">Exportar backup</button>
-      <button type="button" class="ghost small" id="btnImport">Importar backup</button>
+      <button type="button" class="ghost small" id="btnImport">Restaurar backup</button>
       <button type="button" class="ghost small danger" id="btnWipe">Apagar tudo</button>
     </div>
+    <div class="row wrap">
+      <button type="button" class="ghost small" id="btnMerge">Importar lançamentos</button>
+    </div>
     <input type="file" id="fileImport" accept="application/json" hidden>
-    <p class="hint">Os dados ficam só neste aparelho. Exporte um backup de vez em quando.</p>
+    <input type="file" id="fileMerge" accept="application/json" hidden>
+    <p class="hint">Os dados ficam só neste aparelho. Exporte um backup de vez em quando. "Restaurar backup" substitui tudo. "Importar lançamentos" só soma ao que já existe.</p>
     <p class="hint" id="verLbl"></p>
   </form>
 </section>

@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '4.0';
+const APP_VERSION = '4.1';
 
 /* =====================================================================
    ÍCONES (traço, uma cor, herdam a cor do texto)
@@ -20,6 +20,7 @@ const IC = {
   chevd: '<path d="M6 9.5l6 6 6-6"/>',
   chevu: '<path d="M6 14.5l6-6 6 6"/>',
   circle: '<circle cx="12" cy="12" r="8.5"/>',
+  car: '<path d="M4 16v-3.5l1.7-4.6A1.5 1.5 0 0 1 7.1 7h9.8a1.5 1.5 0 0 1 1.4.9L20 12.5V16"/><path d="M4 12.5h16"/><circle cx="7.5" cy="16.5" r="1.7"/><circle cx="16.5" cy="16.5" r="1.7"/>',
 };
 const ico = (n, s = 22, cls = '') =>
   `<svg class="ic ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
@@ -93,6 +94,8 @@ function defaults() {
       { id: 'g-reserva', name: 'Reserva de emergência', target: 3000, start: 0, monthly: 0 },
     ],
     debts: [],
+    car: {},
+    fuel: [],
     market: { items: [], lists: [], cur: null, markets: [], lastMkt: '' },
   };
 }
@@ -204,7 +207,7 @@ const TITLES = { market: 'Mercado', goals: 'Metas e dívidas' };
 function setTab(t) { tab = t; render(); window.scrollTo(0, 0); }
 
 function render() {
-  const monthly = ['home', 'tx', 'plan'].includes(tab);
+  const monthly = ['home', 'tx', 'plan', 'car'].includes(tab);
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   $('#prev').classList.toggle('hid', !monthly);
   $('#next').classList.toggle('hid', !monthly);
@@ -213,8 +216,8 @@ function render() {
     const mt = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     $('#title').textContent = mt.charAt(0).toUpperCase() + mt.slice(1);
   } else $('#title').textContent = TITLES[tab];
-  $('#fab').hidden = !['home', 'tx', 'market'].includes(tab);
-  ({ home: renderHome, tx: renderTx, market: renderMarket, plan: renderPlan, goals: renderGoals })[tab]();
+  $('#fab').hidden = !['home', 'tx', 'market', 'car'].includes(tab);
+  ({ home: renderHome, tx: renderTx, market: renderMarket, plan: renderPlan, goals: renderGoals, car: renderCar })[tab]();
 }
 
 /* =====================================================================
@@ -723,7 +726,7 @@ function openForm(cfg) {
     if (fd.t === 'select') {
       h += `<label><span>${esc(fd.l)}</span><select data-f="${fd.id}">${fd.opts.map(o => `<option value="${esc(o.v)}"${String(o.v) === String(v) ? ' selected' : ''}>${esc(o.l)}</option>`).join('')}</select></label>`;
     } else {
-      h += `<label><span>${esc(fd.l)}</span><input data-f="${fd.id}" ${fd.t === 'money' ? 'inputmode="decimal"' : ''} ${fd.t === 'date' ? 'type="date"' : ''} ${fd.list ? `list="${fd.list}"` : ''} placeholder="${esc(fd.ph || '')}" value="${esc(fd.t === 'money' ? toInput(v) : v)}"></label>`;
+      h += `<label><span>${esc(fd.l)}</span><input data-f="${fd.id}" ${fd.t === 'money' ? 'inputmode="decimal"' : fd.t === 'int' ? 'inputmode="numeric"' : ''} ${fd.t === 'date' ? 'type="date"' : ''} ${fd.list ? `list="${fd.list}"` : ''} placeholder="${esc(fd.ph || '')}" value="${esc(fd.t === 'money' ? toInput(v) : v)}"></label>`;
     }
   });
   h += `<div class="row">${cfg.onDelete ? `<button type="button" class="ghost danger" id="gDel">${esc(cfg.delLabel || 'Excluir')}</button>` : ''}
@@ -749,9 +752,9 @@ $('#formGen').addEventListener('submit', e => {
   const vals = {}; let bad = null;
   gen.fields.forEach(fd => {
     const el = $(`#formGen [data-f="${fd.id}"]`);
-    const v = fd.t === 'money' ? parseMoney(el.value) : el.value.trim();
+    const v = fd.t === 'money' ? parseMoney(el.value) : fd.t === 'int' ? (parseInt(el.value.replace(/\D/g, ''), 10) || 0) : el.value.trim();
     vals[fd.id] = v;
-    if (fd.req && (fd.t === 'money' ? !(v > 0) : !v) && !bad) bad = el;
+    if (fd.req && (fd.t === 'money' || fd.t === 'int' ? !(v > 0) : !v) && !bad) bad = el;
   });
   if (bad) { bad.focus(); return; }
   const cfg = gen;
@@ -969,6 +972,169 @@ function editMc(name) {
 }
 
 /* =====================================================================
+   CARRO: dados do veículo, abastecimentos e consumo
+   ===================================================================== */
+const fuelSorted = () => S.fuel.slice().sort((a, b) => a.date.localeCompare(b.date) || a.odo - b.odo);
+const curOdo = () => Math.max(+((S.car || {}).odo) || 0, ...S.fuel.map(f => f.odo || 0));
+const nf = (v, d = 0) => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+// método do tanque cheio: km entre dois tanques cheios / litros colocados depois do primeiro
+function consumption() {
+  const segs = [];
+  let lastFull = null, liters = 0;
+  fuelSorted().forEach(x => {
+    if (lastFull) liters += x.liters;
+    if (x.full) {
+      if (lastFull && x.odo > lastFull.odo && liters > 0) segs.push({ km: x.odo - lastFull.odo, l: liters });
+      lastFull = x; liters = 0;
+    }
+  });
+  const km = sumBy(segs, g => g.km), l = sumBy(segs, g => g.l), last = segs[segs.length - 1];
+  return { n: segs.length, avg: l ? km / l : 0, last: last ? last.km / last.l : 0 };
+}
+function fuelMonth(mo) {
+  const f = fuelSorted(), inMo = f.filter(x => x.date.startsWith(mo));
+  const amount = sumBy(inMo, x => x.amount), liters = sumBy(inMo, x => x.liters);
+  let km = 0;
+  if (inMo.length) {
+    const before = f.filter(x => x.date < mo + '-01');
+    const start = before.length ? before[before.length - 1].odo : inMo[0].odo;
+    km = Math.max(0, inMo[inMo.length - 1].odo - start);
+  }
+  return { inMo, amount, liters, km, ppl: liters ? amount / liters : 0, cpk: km ? amount / km : 0 };
+}
+
+function renderCar() {
+  const c = S.car || {}, m = fuelMonth(view), cs = consumption(), odo = curOdo();
+  const has = c.model || c.plate;
+  let h = `<section class="card"><div class="head-row"><div class="eyebrow">Veículo</div><button class="link" data-a="editcar">${has ? 'Editar' : 'Cadastrar'}</button></div>`;
+  if (has) {
+    h += `<div class="kv"><span>${esc(c.model || 'Veículo')}${c.year ? ' ' + esc(c.year) : ''}</span><b>${esc(c.plate || '')}</b></div>`;
+    if (c.renavam) h += `<div class="kv"><span>Renavam</span><b class="n">${esc(c.renavam)}</b></div>`;
+    h += `<div class="kv"><span>Odômetro</span><b class="n">${odo ? nf(odo) + ' km' : '—'}</b></div>`;
+  } else h += `<div class="sub">Cadastre modelo, placa e o km atual do carro.</div>`;
+  h += `</section>`;
+
+  h += `<section class="card"><div class="eyebrow">Consumo</div>`;
+  if (cs.n) {
+    h += `<div class="kv strong"><span>Média geral</span><b class="n">${nf(cs.avg, 1)} km/l</b></div>
+      <div class="kv"><span>Último trecho</span><b class="n">${nf(cs.last, 1)} km/l</b></div>
+      <div class="sub">Calculado em ${cs.n} ${cs.n > 1 ? 'trechos' : 'trecho'} entre tanques cheios.</div>`;
+  } else {
+    h += `<div class="sub">Para calcular a média, registre dois abastecimentos com tanque cheio.</div>`;
+  }
+  h += `</section>`;
+
+  h += `<section class="card"><div class="eyebrow">Combustível no mês</div>
+    <div class="kv strong"><span>Gasto</span><b class="n">${brl(m.amount)}</b></div>
+    <div class="kv"><span>Litros</span><b class="n">${nf(m.liters, 1)} L</b></div>
+    <div class="kv"><span>Preço médio por litro</span><b class="n">${m.ppl ? brl(m.ppl) : '—'}</b></div>
+    <div class="kv"><span>Km rodados</span><b class="n">${m.km ? nf(m.km) + ' km' : '—'}</b></div>
+    <div class="kv"><span>Custo por km</span><b class="n">${m.cpk ? brl(m.cpk) : '—'}</b></div></section>`;
+
+  h += `<section class="card"><div class="eyebrow">Abastecimentos</div>`;
+  if (!m.inMo.length) h += `<div class="empty">Nenhum abastecimento neste mês.<br>Toque em + para registrar.</div>`;
+  else m.inMo.slice().reverse().forEach(x => {
+    const d = x.date.split('-').reverse().slice(0, 2).join('/');
+    h += `<button class="tx" data-a="fuel" data-id="${x.id}"><span class="t"><b>${d}${x.station ? ' · ' + esc(x.station) : ''}</b>
+      <small>${nf(x.odo)} km · ${nf(x.liters, 1)} L · ${brl(x.amount / x.liters)}/L${x.full ? '' : ' · parcial'}</small></span>
+      <span class="v n out">${brl(x.amount)}</span></button>`;
+  });
+  h += `</section>`;
+  $('#main').innerHTML = h;
+}
+
+function editCar() {
+  const c = S.car || {};
+  openForm({
+    title: 'Veículo',
+    note: 'Estes dados ficam só neste aparelho e no seu backup.',
+    fields: [
+      { id: 'model', l: 'Modelo', t: 'text', value: c.model || '', ph: 'Ex.: Gol 1.0' },
+      { id: 'year', l: 'Ano', t: 'text', value: c.year || '' },
+      { id: 'plate', l: 'Placa', t: 'text', value: c.plate || '' },
+      { id: 'renavam', l: 'Renavam', t: 'text', value: c.renavam || '' },
+      { id: 'fuelType', l: 'Combustível', t: 'select', value: c.fuelType || 'Flex', opts: ['Flex', 'Gasolina', 'Etanol', 'Diesel', 'GNV'].map(x => ({ v: x, l: x })) },
+      { id: 'odo', l: 'Odômetro atual (km)', t: 'int', value: c.odo || curOdo() || '' },
+    ],
+    onSubmit: v => { S.car = { model: v.model, year: v.year, plate: v.plate.toUpperCase(), renavam: v.renavam, fuelType: v.fuelType, odo: v.odo }; },
+  });
+}
+
+function openFuel(id) {
+  const f = id ? S.fuel.find(x => x.id === id) : null;
+  const fields = [
+    { id: 'date', l: 'Data', t: 'date', value: f ? f.date : defaultDate() },
+    { id: 'odo', l: 'Odômetro (km)', t: 'int', req: 1, value: f ? f.odo : (curOdo() || ''), ph: 'Ex.: 128450' },
+    { id: 'liters', l: 'Litros', t: 'money', req: 1, value: f ? f.liters : '', ph: '0,00' },
+    { id: 'amount', l: 'Valor total (R$)', t: 'money', req: 1, value: f ? f.amount : '', ph: '0,00' },
+    { id: 'full', l: 'Encheu o tanque?', t: 'select', value: f ? (f.full ? '1' : '0') : '1', opts: [{ v: '1', l: 'Sim' }, { v: '0', l: 'Não, abasteci parcial' }] },
+    { id: 'station', l: 'Posto (opcional)', t: 'text', value: f ? f.station : '' },
+  ];
+  if (!f) {
+    fields.push({ id: 'launch', l: 'Lançar também no financeiro (Combustível)', t: 'select', value: '1', opts: [{ v: '1', l: 'Sim' }, { v: '0', l: 'Não, já lancei' }] });
+    fields.push({ id: 'wallet', l: 'Pago com', t: 'select', value: 'main', opts: [{ v: 'main', l: 'Dinheiro, Pix ou débito' }, { v: 'card', l: 'Cartão de crédito' }] });
+  }
+  openForm({
+    title: f ? 'Editar abastecimento' : 'Novo abastecimento',
+    note: f ? (f.tx ? 'Este abastecimento está ligado a um lançamento em Combustível. Ao salvar, o lançamento também é atualizado.' : '')
+      : 'Se esse gasto já está lançado (por exemplo, veio do extrato), escolha "Não" em lançar no financeiro.',
+    fields,
+    delLabel: 'Excluir',
+    confirm: 'Excluir este abastecimento?' + (f && f.tx ? ' O lançamento ligado em Combustível também será excluído.' : ''),
+    onDelete: f ? () => { if (f.tx) S.tx = S.tx.filter(x => x.id !== f.tx); S.fuel = S.fuel.filter(x => x.id !== f.id); } : null,
+    onSubmit: v => {
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(v.date) ? v.date : today();
+      const prev = fuelSorted().filter(x => (!f || x.id !== f.id) && x.date <= date).slice(-1)[0];
+      if (prev && v.odo < prev.odo) { alert('O odômetro é menor que o do abastecimento anterior (' + nf(prev.odo) + ' km).'); return false; }
+      const o = f || { id: uid() };
+      Object.assign(o, { date, odo: v.odo, liters: v.liters, amount: v.amount, full: v.full === '1', station: v.station });
+      if (!f) {
+        S.fuel.push(o);
+        if (v.launch === '1') {
+          const t = { id: uid(), type: 'out', cat: 'Combustível', wallet: v.wallet, amount: v.amount, desc: 'Abastecimento' + (v.station ? ' ' + v.station : ''), date, fuel: o.id };
+          S.tx.push(t); o.tx = t.id;
+        }
+      } else if (o.tx) {
+        const t = S.tx.find(x => x.id === o.tx);
+        if (t) { t.amount = v.amount; t.date = date; if (v.station) t.desc = 'Abastecimento ' + v.station; }
+      }
+      view = date.slice(0, 7);
+    },
+  });
+}
+
+/* =====================================================================
+   IMPORTAR LANÇAMENTOS (soma ao que já existe, sem duplicar)
+   ===================================================================== */
+const okTx = t => t && t.id && ['out', 'in', 'save', 'debt'].includes(t.type) && t.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(t.date);
+const okFuel = x => x && x.id && x.odo > 0 && x.liters > 0 && x.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
+
+function mergePlan(d) {
+  return {
+    tx: (d.tx || []).filter(t => okTx(t) && !S.tx.some(x => x.id === t.id)),
+    fuel: (d.fuel || []).filter(x => okFuel(x) && !S.fuel.some(y => y.id === x.id)),
+    debts: (d.debts || []).filter(x => x && x.id),
+    goals: (d.goals || []).filter(x => x && x.id),
+  };
+}
+function applyMerge(d, p) {
+  p.tx.forEach(t => S.tx.push(t));
+  p.fuel.forEach(x => S.fuel.push(x));
+  const upsert = (arr, x, base) => { const o = arr.find(y => y.id === x.id); if (o) Object.assign(o, x); else arr.push({ ...base, ...x }); };
+  p.debts.forEach(x => upsert(S.debts, x, { name: 'Dívida', total: 0, installment: 0 }));
+  p.goals.forEach(x => upsert(S.goals, x, { name: 'Meta', target: 0, start: 0, monthly: 0 }));
+  if (d.settings) {
+    if (d.settings.income) S.settings.income = { ...S.settings.income, ...d.settings.income };
+    if (d.settings.cardCap != null) S.settings.cardCap = d.settings.cardCap;
+  }
+  if (d.budgets) Object.assign(S.budgets, d.budgets);
+  if (d.car) S.car = { ...(S.car || {}), ...d.car };
+  const last = p.tx.concat(p.fuel).map(x => x.date).sort().pop();
+  if (last) view = last.slice(0, 7);
+}
+
+/* =====================================================================
    CONFIGURAÇÕES
    ===================================================================== */
 $('#openSet').addEventListener('click', () => {
@@ -1005,6 +1171,26 @@ $('#fileImport').addEventListener('change', e => {
   r.readAsText(f);
   e.target.value = '';
 });
+$('#btnMerge').addEventListener('click', () => $('#fileMerge').click());
+$('#fileMerge').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d || d.kind !== 'merge') throw 0;
+      const p = mergePlan(d);
+      const msg = `Adicionar ${p.tx.length} lançamento(s) novo(s)` + (p.fuel.length ? `, ${p.fuel.length} abastecimento(s)` : '')
+        + ((p.debts.length + p.goals.length) ? ` e atualizar ${p.debts.length + p.goals.length} meta(s)/dívida(s)` : '') + '? Nada do que já existe é apagado.';
+      if (!confirm(msg)) return;
+      applyMerge(d, p);
+      persist(); syncCats(); closeSheets(); render();
+    } catch (err) { alert('Arquivo inválido. Use um arquivo de lançamentos gerado para o app.'); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+});
 $('#btnWipe').addEventListener('click', () => {
   if (confirm('Apagar TODOS os dados? Não dá para desfazer.')) {
     S = defaults(); syncCats(); persist(); closeSheets(); render();
@@ -1024,7 +1210,7 @@ function shiftMonth(d) {
 $('#prev').addEventListener('click', () => shiftMonth(-1));
 $('#next').addEventListener('click', () => shiftMonth(1));
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
-$('#fab').addEventListener('click', () => (tab === 'market' ? openAddItem() : openTx()));
+$('#fab').addEventListener('click', () => (tab === 'market' ? openAddItem() : tab === 'car' ? openFuel(null) : openTx()));
 
 const ACT = {
   go: id => setTab(id),
@@ -1056,6 +1242,8 @@ const ACT = {
   cm: id => { chartMode = id; render(); },
   tchart: () => { chartOpen = !chartOpen; render(); },
   catall: () => { catAll = !catAll; render(); },
+  fuel: id => openFuel(id),
+  editcar: () => editCar(),
 };
 $('#main').addEventListener('click', e => {
   const a = e.target.closest('[data-a]');

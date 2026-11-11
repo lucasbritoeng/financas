@@ -144,7 +144,7 @@ main{padding:14px;display:grid;gap:12px;max-width:640px;margin:0 auto}
 #fab{position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));width:52px;height:52px;border:0;border-radius:14px;padding:0;
   background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.22);z-index:6}
 #fab[hidden]{display:none}
-#tabs{position:fixed;left:0;right:0;bottom:0;z-index:7;display:grid;grid-template-columns:repeat(5,1fr);
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:7;display:grid;grid-template-columns:repeat(6,1fr);
   background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 #tabs button{border:0;background:none;color:var(--mut);padding:9px 0 8px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 #tabs button.on{color:var(--ink);font-weight:650}
